@@ -1,0 +1,18 @@
+{
+  "name": "back",
+  "version": "1.0.0",
+  "description": "Api REST For Mangas and Animes Web Page",
+  "main": "index.js",
+  "scripts": {
+    "test": "run test",
+    "dev:1": "nodemon ./index.js"
+  },
+  "author": "Sebaxsus",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "2.8.5",
+    "express": "4.21.2",
+    "nodemon": "3.1.9",
+    "zod": "3.24.2"
+  }
+}
