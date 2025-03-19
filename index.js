@@ -8,7 +8,8 @@ const lorem = "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Omnis, 
 
 const PORT = process.env.PORT ?? 3000
 const ACCEPTED_ORIGINS = [
-    'htpp://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost/'
 ]
 
 const MANGAS = [
@@ -42,6 +43,7 @@ app.use(cors({
 }))
 
 app.get('/mangas', (req, res) => {
+    console.log(`Peticion Get desde: `, req.header('origin'))
     const origin = req.header('origin')
 
     if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
@@ -59,6 +61,7 @@ app.get('/mangas', (req, res) => {
 })
 
 app.post('/mangas', (req, res) => {
+    console.log(`Peticion POST desde: `, req.header('origin'))
     const mangaSchema = zod.object({
         title: zod.string({
             invalid_type_error: "El Titulo debe ser una cadena de texto",
