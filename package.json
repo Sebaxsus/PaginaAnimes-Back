@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "Api REST For Mangas and Animes Web Page",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "run test",
-    "dev:1": "nodemon ./index.js"
+    "dev:1": "nodemon ./index.js",
+    "dev:2" : "nodemon ./app.js"
   },
   "author": "Sebaxsus",
   "license": "MIT",
