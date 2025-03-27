@@ -19,6 +19,34 @@ Content-Type: application/json
     "genre": ["Action"]
 }
 
-###
+### Usando el metodo GET sin Query String o Parametro de Ruta
 
-GET http://localhost:3000/mangas?title=the
+GET http://localhost:3000/mangas
+
+### Usando el metodo GET con la Query String ? Key=Value
+
+GET http://localhost:3000/mangas?title=PRUEBA
+
+### Usando el metodo GET con el parametro de ruta id
+
+GET http://localhost:3000/mangas/2cff6aca-0a95-11f0-84f1-a8a15907d61fc
+
+### Usando el metod POST | Progando las validaciones de ZOD
+
+POST http://localhost:3000/mangas
+Content-Type: application/json
+
+{
+    "title": "Prueba POSt1",
+    "desc": "Probando el metodo post de la API REST",
+    "genre": ["Crime"]
+}
+
+### Usando el metod PATCH para hacer una actualizacion de datos parcial
+
+PATCH  http://localhost:3000/mangas/2cff6aca-0a95-11f0-84f1-a8a15907d61
+Content-Type:  application/json
+
+{
+    "title": "Patch Post 1"
+}

@@ -25,3 +25,6 @@ dist-ssr
 
 # PhotoShop Files
 *.psd
+
+# Word Files
+*.docx

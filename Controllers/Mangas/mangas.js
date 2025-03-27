@@ -1,5 +1,6 @@
-import { MangaModel } from "../../Models/Manga/Arrays/manga.js"
+//import { MangaModel } from "../../Models/Manga/Arrays/manga.js"
 import { validateManga, validatePartialManga } from "../../Schemas/mangaScheme.js"
+import { MangaModel } from "../../Models/Manga/MySQL/manga.js"
 
 //El MangaController es el que recive la Request y decide que Responde
 //Es decir decide que es lo que va a renderziar
@@ -8,9 +9,9 @@ export class MangasController {
 
     static async getAll (req, res) {
         console.log(`Peticion Get desde: `, req.header('origin'))
-
-        const { title } = req.query
-        const mangas = await MangaModel.getAll({ title })
+        // Desestructurando el objeto req.query
+        const { title, genre } = req.query
+        const mangas = await MangaModel.getAll({ genre, title })
 
         res.json(mangas)
     }
