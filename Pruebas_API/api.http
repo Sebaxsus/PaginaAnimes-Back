@@ -50,3 +50,74 @@ Content-Type:  application/json
 {
     "title": "Patch Post 1"
 }
+
+### Usando la nueva ruta de animes con el metodo GET
+
+GET http://localhost:3000/animes
+
+### Usando el metodo GET con el parametro de ruta id
+
+GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+
+### En esta peticion da error el servidor
+### Ya que en el atributo {img} no es una url permitida
+### la url debe empezar por http:// o https://,
+### No estoy seguro si la afirmacion de arriba es cierta
+### Ya que no se que es lo que verifica zod como url
+
+### NOTA | Encontre la validacion de url de ZOD
+### Valores por defecto de ZOD
+###const default_url_options = {
+###  protocols: ['http', 'https', 'ftp'],
+###  require_tld: true,
+###  require_protocol: false,
+###  require_host: true,
+###  require_port: false,
+###  require_valid_protocol: true,
+###  allow_underscores: false,
+###  allow_trailing_dot: false,
+###  allow_protocol_relative_urls: false,
+###  allow_fragments: true,
+###  allow_query_components: true,
+###  validate_length: true,
+###  max_allowed_length: 2084,
+###};
+### URL: https://github.com/validatorjs/validator.js/blob/master/src/lib/isURL.js
+### https://github.com/validatorjs/validator.js/tree/master/src/lib
+
+
+POST http://localhost:3000/animes
+Content-Type: application/json
+
+{
+    "title": "Usando el Post",
+    "desc": "Estoy usando el metodo POST para crear un recurso en mi api",
+    "img": "/hola/prueba/url/esto/es/una/ulr?",
+    "genres": ["Drama", "Sci-Fi"]
+}
+
+### Usando el metodo CREATE en la ruta animes
+
+POST http://localhost:3000/animes
+Content-Type: application/json
+
+{
+    "title": "Usando el Post",
+    "desc": "Estoy usando el metodo POST para crear un recurso en mi api",
+    "img": "data:http://hola/sapa",
+    "genres": ["Drama", "Sci-Fi"]
+}
+
+### Usanod el metodo PATCH en la ruta animes
+
+PATCH  http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+Content-Type: application/json
+
+{
+    "title": "Usando el PATCH ",
+    "img": "https://github.com/validatorjs/validator.js/blob/master/src/lib/isURL.js"
+}
+
+### Usando el metodo DELETE en la ruta animes
+
+DELETE http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
