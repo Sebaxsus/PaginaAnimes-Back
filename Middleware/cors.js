@@ -26,7 +26,7 @@ const ACCEPTED_ORIGINS = [
 //Agregando el cors de la Libreria CORS
 const corsMiddleware = ({acceptedOrigins = ACCEPTED_ORIGINS} = {}) => (cors({
     origin : (origin, callback) => {
-
+        // console.log("Entro a peticion siguiendo con esta code 100 origin: ", origin)
         if (acceptedOrigins.includes(origin) || !origin) {
             return callback(null, true)
         }
