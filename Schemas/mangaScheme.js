@@ -11,8 +11,10 @@ import zod from 'zod'
         }),
         img: zod.string({
             invalid_type_error: "La imagen debe ser una url en forma de cadena de texto!"
-        }).default('./Eula.jpg'),
-        genre: zod.array(zod.enum(["Drama", "Action", "Adventure", "Crime", "Sci-Fi"])).nonempty(),
+        }).url().default('./Eula.jpg'),
+        genre: zod.array(zod.enum(["Drama", "Action", "Adventure", "Crime", "Sci-Fi"])).nonempty({
+            message: "El manga debe tener al menos un genero! 😑"
+        }),
     })
 
     export function validateManga(body) {
