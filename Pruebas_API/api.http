@@ -2,7 +2,7 @@ GET http://localhost:3000/mangas?title=anna
 
 ###
 
-GET http://localhost:3000/mangas?title=man
+GET http://localhost:3000/mangas?title=En
 
 ### Post a la api rest
 ### Es Importante que las API estan abiertas a recibir todo typo de parametros
