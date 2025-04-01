@@ -134,7 +134,7 @@ export class MangaModel {
     static async delete({ id }) {
 
         try {
-            const result = connection.query(
+            const result = await connection.query(
                 "DELETE FROM manga WHERE manga.id = UUID_TO_BIN(?);",
                 [id]
             )
