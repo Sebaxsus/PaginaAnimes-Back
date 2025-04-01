@@ -1,4 +1,4 @@
-import { AnimeModel } from "../../Models/Anime/Arrays/anime.js"
+import { AnimeModel } from "../../Models/Anime/MySQL/anime.js"
 import { validateAnime, validatePartialAnime } from "../../Schemas/animeScheme.js"
 
 export class AnimeController {
