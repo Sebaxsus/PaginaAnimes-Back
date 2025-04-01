@@ -12,7 +12,7 @@ const animeScheme = zod.object({
         img: zod.string({
             invalid_type_error: "La imagen debe ser una url en forma de cadena de texto!"
         }).url().default('./CasualEula.png'),
-        genres: zod.array(zod.enum(["Drama","Action","Crime","Adventure","Sci-Fi","Romance","Isekai","Slice of Life"])).nonempty({
+        genre: zod.array(zod.enum(["Drama","Action","Crime","Adventure","Sci-Fi","Romance","Isekai","Slice of Life"])).nonempty({
             message: "El anime debe tener al menos un genero 😑"
         }),
     }
