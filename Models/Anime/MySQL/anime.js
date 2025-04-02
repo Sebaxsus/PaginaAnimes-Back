@@ -28,7 +28,7 @@ export class AnimeModel {
                         [anime.id]
                     )
 
-                    return {...anime, gener: generos.map( (g) => {return g.name})}
+                    return {...anime, genre: generos?.length ? generos.map( (g) => {return g.name}) : generos}
                 })
             )
 
@@ -47,7 +47,7 @@ export class AnimeModel {
                         [anime.id]
                     )
 
-                    return {...anime, genre: genre.map( (g) => {return g.name})}
+                    return {...anime, genre: genre?.length ? genre.map( (g) => {return g.name}) : genre}
                 })
             )
 
@@ -72,9 +72,9 @@ export class AnimeModel {
             [id]
         )
 
-        console.log("Prueba desestruturar query con solo un elemento en la lista: ", anime, " Generos: ", generos)
-
-        return {...anime[0], genre: generos[0].map((genero) => {return genero.name})}
+        // console.log("Prueba desestruturar query con solo un elemento en la lista: ", anime, anime[0], " Generos: ", generos)
+        // Al verificar la longitud de un objeto anime[0] va a devolver undefined
+        return anime?.length ? {...anime[0], genre: generos?.length ? generos.map((genero) => {return genero.name}) : generos } : new Error("No existe el anime con esa ID!")
 
     }
 
@@ -99,14 +99,14 @@ export class AnimeModel {
             genreData.map(async (genero) => {
                 genero = genero.toLowerCase()
                 const query = await conncetion.query(
-                    "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), (SELECT genero.id FROM genero WHERE LOWER(title) = LOWER(?) ) );",
+                    "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), (SELECT genero.id FROM genero WHERE LOWER(genero.name) = LOWER(?) ) );",
                     [uuid, genero]
                 )
             })
         } catch (e) {
             console.log(e)
 
-            throw new Error("Error al crear el Anime!")
+            return new Error("Error inesperado al crear el Anime!")
         }
 
         const [anime] = await conncetion.query(
@@ -115,7 +115,11 @@ export class AnimeModel {
         )
 
         // ######### Aqui Falta devolver los generos ligados al anime
-        return anime[0]
+        // ### Actualizacion ya devuelve los generos ligados al anime
+        // Pero no de una consulta a la BD, asumiendo que para llegar aqui
+        // No hubo errores, por lo que usar la query tampoco es necesario
+        // Hasta generaria mas uso de recursos de manera innecesariamente
+        return {...anime[0], genre: genreData}
     }
 
     static async update({ id, data}) {
