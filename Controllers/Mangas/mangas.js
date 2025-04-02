@@ -13,7 +13,12 @@ export class MangasController {
         const { title, genre } = req.query
         const mangas = await MangaModel.getAll({ genre, title })
 
-        res.json(mangas)
+        if (mangas instanceof Error) {
+            console.error(mangas)
+            return res.status(500).json({message: "Error interno " + mangas.message})
+        }
+
+        res.status(200).json(mangas)
     }
 
     static async getById (req, res) {
@@ -23,9 +28,12 @@ export class MangasController {
 
         const manga = await MangaModel.getById({id})
         //Si manga es distinto a null entonces devuelve manga
-        if (manga) return res.json(manga)
-
-        res.status(404).json({ message: "Error 404, Not Found" })
+        if (manga instanceof Error) {
+            //console.log(manga)
+            return res.status(404).json({ message: "Error 404, Not Found " + manga.message })
+        }
+        
+        return res.status(200).json(manga)
     }
 
     static async create (req, res) {
@@ -34,12 +42,22 @@ export class MangasController {
         const result = validateManga(req.body)
 
         if (result.error) {
-            return res.status(400).json({ error: JSON.parse(result.error.message) })
+            return res.status(400).json({
+                message: "Error!, No se pudo crear el Manga",
+                error: JSON.parse(result.error.message) 
+            })
         }
 
         const newManga = await MangaModel.create({ input: result.data })
 
-        res.status(201).json({
+        if (newManga instanceof Error) {
+            return res.status(500).json({
+                message: newManga.message,
+                code: 500
+            })
+        }
+
+        return res.status(201).json({
             message: "Manga Creado con Exito",
             code: 201,
             mangaSaved: [newManga],

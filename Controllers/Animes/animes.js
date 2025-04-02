@@ -9,7 +9,12 @@ export class AnimeController {
 
         const anime = await AnimeModel.getAll({title})
 
-        return res.json(anime)
+        if (anime instanceof Error) {
+            console.error(anime)
+            return res.status(500).json({message: "Error por causa desconocida " + anime.message})
+        }
+
+        return res.status(200).json(anime)
     }
 
     static async getById(req, res) {
@@ -17,12 +22,16 @@ export class AnimeController {
         const { id } = req.params
 
         const anime = await AnimeModel.getById({id})
-
-        if (anime) {
-            return res.json(anime)
+        // Al usar MySQL y la ID llega a ser una UUID Valida pero no esta en la base de datos
+        // Retornara un Null
+        //            Mensaje,               object,               true,             donde se produjo, mensaje           
+        //console.log(anime.message, "\n", typeof(anime), anime instanceof Error, anime.stack, anime.message)
+        if (anime instanceof Error) {
+            //console.log(anime)
+            return res.status(404).json({message: "Error 404, Not Found " + anime.message})
         }
 
-        return res.status(404).json({message: "Error 404, Not Found"})
+        return res.status(200).json(anime)
     }
 
     static async create(req, res) {
@@ -38,6 +47,13 @@ export class AnimeController {
 
         const newAnime = await AnimeModel.create({data: result.data})
         
+        if (newAnime instanceof Error) {
+            return res.status(500).json({
+                message: newAnime.message,
+                code: 500
+            })
+        }
+
         return res.status(201).json({
             message: "Se creo el anime con exito!",
             code: 201,
