@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "run test",
+    "dev": "nodemon ./app.js",
     "dev:1": "nodemon ./index.js",
     "dev:2": "nodemon ./app.js"
   },
