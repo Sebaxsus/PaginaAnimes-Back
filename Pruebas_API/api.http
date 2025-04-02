@@ -57,7 +57,20 @@ GET http://localhost:3000/animes
 
 ### Usando el metodo GET con el parametro de ruta id
 
-GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+GET http://localhost:3000/animes/72d0fe32-0e86-11f0-80b3-a8a15907d61f
+
+### Usando el metodo POST pero con la propiedad img erronea
+### Ya que no es una URL Valida
+
+POST http://localhost:3000/animes
+Content-Type: application/json
+
+{
+    "title": "Usando el Post",
+    "desc": "Estoy usando el metodo POST para crear un recurso en mi api",
+    "img": "/hola/prueba/url/esto/es/una/ulr?",
+    "genres": ["Drama", "Sci-Fi"]
+}
 
 ### En esta peticion da error el servidor
 ### Ya que en el atributo {img} no es una url permitida
@@ -85,18 +98,7 @@ GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
 ### URL: https://github.com/validatorjs/validator.js/blob/master/src/lib/isURL.js
 ### https://github.com/validatorjs/validator.js/tree/master/src/lib
 
-
-POST http://localhost:3000/animes
-Content-Type: application/json
-
-{
-    "title": "Usando el Post",
-    "desc": "Estoy usando el metodo POST para crear un recurso en mi api",
-    "img": "/hola/prueba/url/esto/es/una/ulr?",
-    "genres": ["Drama", "Sci-Fi"]
-}
-
-### Usando el metodo CREATE en la ruta animes
+### Usando el metodo POST (CREATE) en la ruta animes
 
 POST http://localhost:3000/animes
 Content-Type: application/json
@@ -121,3 +123,17 @@ Content-Type: application/json
 ### Usando el metodo DELETE en la ruta animes
 
 DELETE http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+
+### Usando el atributo title del Metodo GET para buscar Animes por un titulo
+
+GET http://localhost:3000/animes?title=ONE
+
+### Usando el metodo GET con el parametro de ruta id
+### Con una UUID valida pero no existente en la Base de Datos
+
+GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+
+### Probando el retorno del Metodo GET By Id cuando no hay
+### generos ligados al anime
+
+GET http://localhost:3000/animes/229786cc-0f92-11f0-a178-a8a15907d61f
