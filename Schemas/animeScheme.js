@@ -5,7 +5,7 @@ const animeScheme = zod.object({
             invalid_type_error: "El titulo debe ser una cadena de texto!",
             required_error: "El anime debe tener un titulo!"
         }),
-        desc: zod.string({
+        description: zod.string({
             invalid_type_error: "La descripcion debe ser una cadena de texto!",
             required_error: "El anime debe tener una descripcion!"
         }),
