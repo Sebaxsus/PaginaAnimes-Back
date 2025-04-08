@@ -11,16 +11,23 @@ import zod from 'zod'
         }),
         img: zod.string({
             invalid_type_error: "La imagen debe ser una url en forma de cadena de texto!"
-        }).url().default('./Eula.jpg'),
-        genre: zod.array(zod.enum([
+        }).url().default('/Eula.jpg'),
+        genre: zod.array(zod.number({
+            invalid_type_error: "El arreglo debe contener numeros",
+            required_error: "El arreglo debe tener al menos un genero (id)"
+        }).positive({
+            message: "El id del Genero debe ser positivo mayor que uno >(1)"
+        })),
+    })
+    /*
+    genre: zod.array(zod.enum([
             'Action','Adventure','Comedy','Crime','Dark Fantasy','Drama',
             'Fantasy','Historical','Isekai','Mystery','Romance','Sci-Fi',
             'Slice of Life','Supernatural'
         ])).nonempty({
             message: "El manga debe tener al menos un genero! 😑"
-        }),
-    })
-
+        })
+    */
     export function validateManga(body) {
         return mangaSchema.safeParse(body)
     }

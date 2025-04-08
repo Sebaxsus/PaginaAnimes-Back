@@ -4,7 +4,7 @@ import { validateAnime, validatePartialAnime } from "../../Schemas/animeScheme.j
 export class AnimeController {
 
     static async getAll(req, res) {
-        console.log(`Peticion GET desde: ${req.header('origin')}`)
+        console.log(`Peticion GET Anime desde: ${req.header('origin')}`)
         const { title } = req.query
 
         const anime = await AnimeModel.getAll({title})
@@ -18,7 +18,7 @@ export class AnimeController {
     }
 
     static async getById(req, res) {
-        console.log(`Peticion GET by Id desde: ${req.header('origin')}`)
+        console.log(`Peticion GET by Id Anime desde: ${req.header('origin')}`)
         const { id } = req.params
 
         const anime = await AnimeModel.getById({id})
@@ -35,7 +35,7 @@ export class AnimeController {
     }
 
     static async create(req, res) {
-        console.log(`Peticion POST desde: ${req.header('origin')}`)
+        console.log(`Peticion POST Anime desde: ${req.header('origin')}`)
         const result = validateAnime(req.body)
 
         if (result.error) {
@@ -62,7 +62,7 @@ export class AnimeController {
     }
 
     static async update(req, res) {
-        console.log(`Peticion PATCH desde: ${req.header('origin')}`)
+        console.log(`Peticion PATCH Anime desde: ${req.header('origin')}`)
         const { id } = req.params
         
         const result = validatePartialAnime(req.body)
@@ -91,7 +91,7 @@ export class AnimeController {
 
     static async delete(req, res) {
         
-        console.log(`Peticion DELETE desde: ${req.header('origin')}`)
+        console.log(`Peticion DELETE Anime desde: ${req.header('origin')}`)
 
         const { id } = req.params
 

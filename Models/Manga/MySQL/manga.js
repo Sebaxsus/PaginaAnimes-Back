@@ -31,11 +31,12 @@ export class MangaModel {
             const mangas = await Promise.all(
                 mangasQ.map(async (manga) => {
                     const [generos, generosStructure] = await connection.query(
-                        "SELECT genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                        "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
                         [manga.id]
                     )
 
-                    return {...manga, genre: generos?.length ? generos.map((genero) => {return genero.name}) : generos}
+                    return {...manga, genre: generos }
+                    // generos?.length ? generos.map((genero) => {return [genero.id,genero.name]}) : generos
             }))
             
             return mangas
@@ -66,11 +67,11 @@ export class MangaModel {
             const mangas = await Promise.all(
                 mangasT.map(async (manga) => {
                     const [genre, structure] = await connection.query(
-                        "SELECT genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                        "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
                         [manga.id]
                     )
 
-                    return {...manga, genre: genre?.length ? genre.map( (g) => {return g.name}) : genre}
+                    return {...manga, genre: genre}
                 })
             )
 
@@ -83,21 +84,28 @@ export class MangaModel {
 
     static async getById({ id }) {
 
-        // ****** Esto parece estar mal, Ya que no devolvera las lista de generos del Manga. 0.o
-        const [manga, mangaStructure] = await connection.query(
-            "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE id = UUID_TO_BIN(?);",
-            [id]
-        )
-        
-        // Solicitando todos los generos ligados al manga con id
+        try {
+            // ****** Esto parece estar mal, Ya que no devolvera las lista de generos del Manga. 0.o
+            const [manga, mangaStructure] = await connection.query(
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE id = UUID_TO_BIN(?);",
+                [id]
+            )
+            
+            // Solicitando todos los generos ligados al manga con id
 
-        const [generos, structure] = await connection.query(
-            "SELECT genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
-            [id]
-        )
+            const [generos, structure] = await connection.query(
+                "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                [id]
+            )
 
-        //console.log("Prueba desestruturar query con solo un elemento en la lista: ", manga, manga[0], " Generos: ", generos)
-        return manga?.length ? {...manga[0], genre: generos?.length ? generos.map((genero) => {return genero.name}) : generos} : new Error("No existe el manga con es ID!")
+            //console.log("Prueba desestruturar query con solo un elemento en la lista: ", manga, manga[0], " Generos: ", generos)
+            return manga?.length ? {...manga[0], genre: generos} : new Error("No existe el manga con es ID!")
+
+        } catch (e) {
+            console.log("Error en el getById Manga: ",e)
+            //return new Error(e.sqlMessage)
+            return new Error("Internal Error!")
+        }
 
     }
     // POST | Input = req.body && DATA.
@@ -114,25 +122,31 @@ export class MangaModel {
         const [{uuid}] = uuidResult
 
         try {
+            await connection.beginTransaction()
+
             const result = await connection.query(
                 "INSERT INTO manga (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
                 [uuid, title, desc, img]
             )
 
-            genreInput.map(async (genre) => {
-                genre = genre.toLowerCase()
-                const result = await connection.query(
-                    "INSERT INTO manga_genre (manga_id, genero_id) VALUES (UUID_TO_BIN(?), (SELECT genero.id FROM genero WHERE LOWER(genero.name) = LOWER(?)) );",
-                    [uuid, genre]
-                )
-            })
+            await Promise.all(
+                genreInput.map(async (genre) => {
+                    genre = genre.toLowerCase()
+                    const result = await connection.query(
+                        "INSERT INTO manga_genre (manga_id, genero_id) VALUES (UUID_TO_BIN(?), ?);",
+                        [uuid, genre]
+                    )
+                })
+            )
 
+            await connection.commit()
         } catch (e) {
             console.log(e)
-
+            await connection.rollback()
             return new Error("Error interno al crear el Manga!")
         }
         // Segun yo esto esta mal, Ya que si falla la query del try/catch esto se ejecutra igual mente
+
         // ya se movio 😁
 
         const [manga] = await connection.query(
@@ -140,19 +154,34 @@ export class MangaModel {
             [uuid]
         )
 
-        return {...manga[0], genre: genreInput}
+        const [generos] = await connection.query(
+            "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.anime_id = UUID_TO_BIN(?);",
+            [uuid]
+        )
+
+        return {...manga[0], genre: generos }
 
     }
 
     static async delete({ id }) {
 
         try {
-            const result = await connection.query(
+            await connection.beginTransaction()
+
+            const [resultManga] = await connection.query(
                 "DELETE FROM manga WHERE manga.id = UUID_TO_BIN(?);",
                 [id]
             )
+
+            const [resultGenres] = await connection.query(
+                "DELETE FROM manga_genre WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                [id]
+            )
+
+            await connection.commit()
         } catch (e) {
             console.log(e)
+            await connection.rollback()
             return false
             throw new Error("Error al crear el Manga")
         }
@@ -167,11 +196,16 @@ export class MangaModel {
         // y no se tiene en cuenta los campos de la tabal manga_genre o genero
         const keys = []
         const values = []
+        let genres = []
 
         Object.entries(input).map(([key, value]) => {
             if (value !== undefined) {
-                keys.push(`${key} = ?`)
-                values.push(value)
+                if (key === "genre") {
+                    genres = value
+                } else {
+                    keys.push(`${key} = ?`)
+                    values.push(value)
+                }
             }
         })
 
@@ -186,13 +220,28 @@ export class MangaModel {
         const query = `UPDATE manga SET ${keys.join(', ')} WHERE id = UUID_TO_BIN(?);`
 
         try {
+            await connection.beginTransaction()
+
             const [result] = await connection.query(query, values)
-            if (result.affectedRows === 0) {
+
+            const [resultGenres] = genres?.length ? await Promise.all(
+                genres.map(async (genero) => {
+                    "INSERT INTO manga_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), ?);",
+                    [id, genero]
+                })
+            ) : null
+
+            if (result.affectedRows === 0 || resultGenres === null) {
                 console.log("No se encontro la Manga o No se hicieron Cambios, Filas Afectadas: ", result.affectedRows)
+                await connection.rollback()
                 return false
+            } else {
+                await connection.commit()
             }
+
         } catch (e) {
             console.log("Error actualizando el Manga:", e)
+            await connection.rollback()
             return false
             throw new Error("Error al actualizar el Manga")
         }
@@ -202,7 +251,12 @@ export class MangaModel {
             [id]
         )
 
-        return updatedManga[0]
+        const [generos] = await connection.query(
+            "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+            [id]
+        )
+
+        return {...updatedManga[0], genre: generos }
 
     }
     

@@ -8,7 +8,7 @@ import { MangaModel } from "../../Models/Manga/MySQL/manga.js"
 export class MangasController {
 
     static async getAll (req, res) {
-        console.log(`Peticion Get desde: `, req.header('origin'))
+        console.log(`Peticion Get Manga desde: `, req.header('origin'))
         // Desestructurando el objeto req.query
         const { title, genre } = req.query
         const mangas = await MangaModel.getAll({ genre, title })
@@ -22,7 +22,7 @@ export class MangasController {
     }
 
     static async getById (req, res) {
-        console.log(`Peticion GetById desde: `, req.header('origin'))
+        console.log(`Peticion GetById Manga desde: `, req.header('origin'))
         //el '/:id' es un paramatro del endpoint (URL) y el :id es parte de Path-To-Regexp de Express
         const { id } = req.params // esto es lo mismo que const id = req.params.id
 
@@ -37,7 +37,7 @@ export class MangasController {
     }
 
     static async create (req, res) {
-        console.log(`Peticion POST desde: `, req.header('origin'), " Body: ", req.body)
+        console.log(`Peticion POST Manga desde: `, req.header('origin'), " Body: ", req.body)
         //Usando ZOD para manejar las entradas y validarlas
         const result = validateManga(req.body)
 
@@ -66,7 +66,7 @@ export class MangasController {
     }
 
     static async update (req, res) {
-        console.log(`Peticion PATCH desde: `, req.header('origin'), " Body: ", req.body)
+        console.log(`Peticion PATCH Manga desde: `, req.header('origin'), " Body: ", req.body)
         const result = validatePartialManga(req.body)
 
         if (!result.success) {
@@ -86,7 +86,7 @@ export class MangasController {
     }
 
     static async delete (req, res) {
-        console.log(`Peticion DELETE desde: `, req.header('origin'), " Body: ", req.body)
+        console.log(`Peticion DELETE Manga desde: `, req.header('origin'), " Body: ", req.body)
         const { id } = req.params
 
         const result = await MangaModel.delete({ id: id })

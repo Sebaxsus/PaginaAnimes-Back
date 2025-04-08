@@ -8,27 +8,31 @@ const config = {
     database: "pagcontent"
 }
 
-const conncetion = await mysql.createConnection(config)
+const connection = await mysql.createConnection(config)
 export class AnimeModel {
+
+    async #updateGenres() {
+
+    }
 
     static async getAll({title}) {
         
         if (title) {
             const lowerTitle = title.toLowerCase() + "%"
 
-            const [animesQ, queryStructure] = await conncetion.query(
+            const [animesQ, queryStructure] = await connection.query(
                 "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?);",
                 [lowerTitle]
             )
             
             const animes = await Promise.all(
                 animesQ.map(async (anime) => {
-                    const [generos] = await conncetion.query(
-                        "SELECT genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                    const [generos] = await connection.query(
+                        "SELECT genero.id,genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
                         [anime.id]
                     )
 
-                    return {...anime, genre: generos?.length ? generos.map( (g) => {return g.name}) : generos}
+                    return {...anime, genre: generos}
                 })
             )
 
@@ -36,18 +40,19 @@ export class AnimeModel {
         }
 
         if (title === undefined) {
-            const [animeQ, queryStructure] = await conncetion.query(
+            const [animeQ, queryStructure] = await connection.query(
                 "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime;"
             )
 
             const anime = await Promise.all(
                 animeQ.map(async (anime) => {
-                    const [genre, structure] = await conncetion.query(
-                        "SELECT genero.name FROM genero RIGHT JOIN anime_genre on genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                    const [genre, structure] = await connection.query(
+                        "SELECT genero.id,genero.name FROM genero RIGHT JOIN anime_genre on genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
                         [anime.id]
                     )
 
-                    return {...anime, genre: genre?.length ? genre.map( (g) => {return g.name}) : genre}
+                    return {...anime, genre: genre}
+                    //genre?.length ? genre.map( (g) => {return [g.id,g.name]}) : genre
                 })
             )
 
@@ -59,23 +64,29 @@ export class AnimeModel {
     }
 
     static async getById({ id }) {
+
+        try {
+            const [anime] = await connection.query(
+                "SELECT BIN_TO_UUID(id) as id, title, description, img FROM anime WHERE id = UUID_TO_BIN(?);",
+                [id]
+            )
+    
+            // Solicitando todos los generos ligados al anime con la id
+    
+            const [generos] = await connection.query(
+                "SELECT genero.id,genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                [id]
+            )
+
+            // console.log("Prueba desestruturar query con solo un elemento en la lista: ", anime, anime[0], " Generos: ", generos)
+            // Al verificar la longitud de un objeto anime[0] va a devolver undefined
+            return anime?.length ? {...anime[0], genre: generos } : new Error("No existe el anime con esa ID!")
+        } catch (e) {
+            console.log("Error en el getById Anime: ",e)
+            //return new Error(e.sqlMessage)
+            return new Error("Internal Error!")
+        }
         
-        const [anime] = await conncetion.query(
-            "SELECT BIN_TO_UUID(id) as id, title, description, img FROM anime WHERE id = UUID_TO_BIN(?);",
-            [id]
-        )
-
-        // Solicitando todos los generos ligados al anime con la id
-
-        const [generos] = await conncetion.query(
-            "SELECT genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
-            [id]
-        )
-
-        // console.log("Prueba desestruturar query con solo un elemento en la lista: ", anime, anime[0], " Generos: ", generos)
-        // Al verificar la longitud de un objeto anime[0] va a devolver undefined
-        return anime?.length ? {...anime[0], genre: generos?.length ? generos.map((genero) => {return genero.name}) : generos } : new Error("No existe el anime con esa ID!")
-
     }
 
     static async create({ data }) {
@@ -87,30 +98,41 @@ export class AnimeModel {
             img,
         } = data
 
-        const [uuidResult] = await conncetion.query("SELECT UUID() uuid;")
+        const [uuidResult] = await connection.query("SELECT UUID() uuid;")
         const [{uuid}] = uuidResult
 
         try {
-            const result = await conncetion.query(
+            await connection.beginTransaction()
+
+            const result = await connection.query(
                 "INSERT INTO anime (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
                 [uuid, title, desc, img]
             )
 
-            genreData.map(async (genero) => {
-                genero = genero.toLowerCase()
-                const query = await conncetion.query(
-                    "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), (SELECT genero.id FROM genero WHERE LOWER(genero.name) = LOWER(?) ) );",
-                    [uuid, genero]
-                )
-            })
+            await Promise.all(
+                genreData.map(async (genero) => {
+                    genero = genero.toLowerCase()
+                    const query = await connection.query(
+                        "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), ?);",
+                        [uuid, genero]
+                    )
+                })
+            )
+
+            await connection.commit()
         } catch (e) {
             console.log(e)
-
+            await connection.rollback()
             return new Error("Error inesperado al crear el Anime!")
         }
 
-        const [anime] = await conncetion.query(
+        const [anime] = await connection.query(
             "SELCET BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE anime.id = UUID_TO_BIN(?);",
+            [uuid]
+        )
+
+        const [generos] = await connection.query(
+            "SELECT genero.id,genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
             [uuid]
         )
 
@@ -119,7 +141,10 @@ export class AnimeModel {
         // Pero no de una consulta a la BD, asumiendo que para llegar aqui
         // No hubo errores, por lo que usar la query tampoco es necesario
         // Hasta generaria mas uso de recursos de manera innecesariamente
-        return {...anime[0], genre: genreData}
+
+        // ### Actualizacion 2 Como se maneja los id de los generos en lugar de su nombre toca
+        // Sacar los generos por una consulta
+        return {...anime[0], genre: generos }
     }
 
     static async update({ id, data}) {
@@ -129,16 +154,21 @@ export class AnimeModel {
         // En una consulta UPDATE dinamica
         const keys = []
         const values = []
+        let genres = []
 
         Object.entries(data).map(([key, value]) => {
             if (value !== undefined) {
                 // keys.push("title = ?")
-                keys.push(`${key} = ?`)
-                values.push(value)
+                if (key === "genre") {
+                    genres = value
+                } else {
+                    keys.push(`${key} = ?`)
+                    values.push(value)
+                }
             }
         })
 
-        if (keys.length === 0) {
+        if (keys.length === 0 && genres.length === 0) {
             console.error("No se pasaron campos en la Peticion! 404")
             return false
         }
@@ -150,34 +180,72 @@ export class AnimeModel {
         const query = `UPDATE anime SET ${keys.join(', ')} WHERE id = UUID_TO_BIN(?);`
 
         try {
-            const [result] = await conncetion.query(query, values)
-            if (result.affectedRows === 0) {
+            await connection.beginTransaction()
+
+            const [result] = keys?.length ? await connection.query(query, values) : []
+
+            const [generos] = await connection.query(
+                "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                [id]
+            )
+            
+            const [resultGenres] = genres?.length ? await Promise.all(
+                genres.map(async (genero) => {
+                    console.log([id, genero], generos.some((g) => {return g.id === genero}))
+                    generos.some((g) => {return g.id === genero}) ? "" : await connection.query(
+                        "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?),?);",
+                        [id, genero]
+                    )
+                })
+            ) : null
+            console.log(result, resultGenres)
+            if (result.affectedRows === 0 && resultGenres === null) {
                 console.log("No se encontro el anime o No se hicieron Cambios 400, Filas Afectadas: ", result.affectedRows)
+                await connection.rollback()
                 return false
+            } else {
+                await connection.commit()
             }
+
         } catch (e) {
             console.log("Error actualizando el Anime: ", e)
+            await connection.rollback()
             return false
             throw new Error("Error al actualizar el Anime")
         }
 
-        const [updatedAnime] = await conncetion.query(
+        const [updatedAnime] = await connection.query(
             "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE anime.id = UUID_TO_BIN(?);",
             [id]
         )
+
+        const [generos] = await connection.query(
+            "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+            [id]
+        )
         
-        return updatedAnime[0]
+        return {...updatedAnime[0], genre: generos }
     }
 
     static async delete({id}) {
 
         try {
-            const result = await conncetion.query(
+            await connection.beginTransaction()
+
+            const [resultAnime] = await connection.query(
                 "DELETE FROM anime WHERE anime.id = UUID_TO_BIN(?);",
                 [id]
             )
+
+            const [resultGenres] = await connection.query(
+                "DELETE FROM anime_genre WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                [id]
+            )
+
+            await connection.commit()
         } catch (e) {
             console.log(e)
+            await connection.rollback()
             return false
             throw new Error("Error al crear el Anime!")
         }
