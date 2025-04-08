@@ -148,5 +148,6 @@ PATCH http://localhost:3000/animes/229786cc-0f92-11f0-a178-a8a15907d61f
 Content-Type: application/json
 
 {
-    "genre": [1, 2]
+    
+    "genre": [1, 2, 7]
 }
