@@ -155,8 +155,11 @@ export class AnimeModel {
         const keys = []
         const values = []
         let genres = []
+        const Gdelete = []
+        const Ginsert = []
 
         Object.entries(data).map(([key, value]) => {
+            // console.log("Map data: ", key, value)
             if (value !== undefined) {
                 // keys.push("title = ?")
                 if (key === "genre") {
@@ -179,33 +182,206 @@ export class AnimeModel {
 
         const query = `UPDATE anime SET ${keys.join(', ')} WHERE id = UUID_TO_BIN(?);`
 
+        // const [generosT] = await connection.query(
+        //     "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+        //     [id]
+        // )
+        // console.log(`Generos T: ${generosT} \nGeneros: ${generos}\ngenres: ${genres}\nQuery: ${query}\nKeys: ${keys}\nValues: ${values}`)
+        // console.log(`Generos T: ${generosT}\ngenres: ${genres}\nQuery: ${query}\nKeys: ${keys}\nValues: ${values}`)
+        // console.log(keys.length && genres.length ? true : false, genres.length ? true : false, keys.length ? true : false)
+
+        // if (keys.length && genres.length) {
+        //     console.log("Consulta exitosa: ", query,values)
+
+        //     generosT.map((genero) => {
+        //         // console.log(
+        //         //     "Map generosT: ", genero,
+        //         //     "\nGenero de  BD Esta en la Req ", genres.includes(genero.id),
+        //         // )
+        //         genres.includes(genero.id) ? genres.splice(genres.indexOf(genero.id), 1) : Gdelete.push(genero.id)
+
+        //     })
+
+        //     console.log(`DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(${id}) AND genero_id = (${Gdelete});`)
+        //     genres.forEach(genero => {
+        //         console.log(`INSERT INTO anime_genre (anime_id,genero_id) VALUES (${id},${genres});`)
+        //     })
+        // } else {
+        //     if (genres.length) {
+        //         generosT.map((genero) => {
+        //             // console.log(
+        //             //     "Map generosT: ", genero,
+        //             //     "\nGenero de  BD Esta en la Req ", genres.includes(genero.id),
+        //             // )
+        //             genres.includes(genero.id) ? genres.splice(genres.indexOf(genero.id), 1) : Gdelete.push(genero.id)
+    
+        //         })
+    
+        //         console.log(`DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(${id}) AND genero_id IN (${Gdelete});`)
+        //         genres.forEach(genero => {
+        //             Ginsert.push(`(${id}, ${genero})`)
+        //         })
+        //         console.log(`INSERT INTO anime_genre (anime_id,genero_id) VALUES ${Ginsert.join(", ")};`)
+                
+        //     }
+
+        //     if (keys.length) {
+        //         console.log("Consulta exitosa: ", query,values)
+        //     }
+        // }
+
         try {
             await connection.beginTransaction()
-
-            const [result] = keys?.length ? await connection.query(query, values) : []
 
             const [generos] = await connection.query(
                 "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
                 [id]
             )
-            
-            const [resultGenres] = genres?.length ? await Promise.all(
-                genres.map(async (genero) => {
-                    console.log([id, genero], generos.some((g) => {return g.id === genero}))
-                    generos.some((g) => {return g.id === genero}) ? "" : await connection.query(
-                        "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?),?);",
-                        [id, genero]
-                    )
+            // Los condicionales es para Discriminar/Separar 
+            // Toda la logica segun que contenido esta vacio y que contenido
+            // No
+            // Es decir si todos los atributos de mi objeto data de mi peticion
+            // Req.data estan vacios no hare nada
+            // Pero si tengo al menos un atributo entre los siguientes
+            // title, description, img Generare una consulta para actualizar
+            // los datos de los campos enviados
+            // Pero si solo tengo datos en mi atributo genre
+            // Recorrere la lista de generos en busca de los cambios
+            // y actualizare segun los cambios.
+            if (keys.length && genres.length) {
+
+                const [result] = await connection.query(query, values)
+                // Obtener los generos del anime de la BD
+                // Comparar cuales ya estan guardados, Cuales no y Cuales desaparecierion
+                generos.map((genero) => {
+                    genres.includes(genero.id) ? 
+                        genres.splice(genres.indexOf(genero.id), 1) :
+                        Gdelete.push(genero.id) 
                 })
-            ) : null
-            console.log(result, resultGenres)
-            if (result.affectedRows === 0 && resultGenres === null) {
-                console.log("No se encontro el anime o No se hicieron Cambios 400, Filas Afectadas: ", result.affectedRows)
-                await connection.rollback()
-                return false
+
+                genres.forEach(genero => {
+                    Ginsert.push(`(${id}, ${genero})`)
+                })
+
+                await connection.query(
+                    "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                    [id, Gdelete]
+                )
+
+                await connection.query(
+                    `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                )
+
+                console.log(result)
+
+                if (result.affectedRows === 0) {
+
+                    console.log("No se encontro el anime o No se hicieron Cambios 400, Filas Afectadas: ", result.affectedRows)
+                    await connection.rollback()
+                    return false
+
+                } else {
+
+                    await connection.commit()
+
+                }
             } else {
-                await connection.commit()
+
+                if (genres.length) {
+
+                    /*
+                        Explicacion de todo este mamotreto 🤗
+                        
+                        - Primero recorro toda la respuesta de mi consulta
+                            incial (Obtener todos los generos guardados -
+                            en la base de datos ligados a un anime_id)
+                        - Dentro de la iteracion de mi respuesta 
+                            (Arrglo de Objetos), Verifico con una ternaria ?
+                            si alguno de los generos guardados en la BD estan
+                            en la lista de generos de mi peticion (Request)
+
+                            Si el genero que esta en el Arreglo de mi consulta
+                            (BD), tambien esta en el Arreglo de mi PETICION (Req)
+                            saco el Genero del arreglo de generos -
+                            que viene en mi peticion (Req), Usando el metodo
+                            Array.prototype.indexOf(genero.id) sabiendo que
+                            genero.id es el mismo valor en los dos arreglos
+
+
+                            Si el genero de mi BD no esta en el arreglo de
+                            Generos de la PETICION (Req), Sé que desde el
+                            Cliente lo quitaron de las Opciones, por ende
+                            Lo agrego a un arreglo en donde guardo los id
+                            De genero que se van a eliminar de la tabla
+                            anime_genre.
+
+                        - Segundo recorro el arreglo de Generos que viene
+                            en mi PETICION (Request) luego de haber eliminado
+                            los generos que ya estan en la BD, 
+                            para agregar cada Genero de este arreglo
+                            a una lista de Strings, en donde cada String
+                            es un par (anime_id, genero_id) 
+                        
+                        - Tercero envio la consulta para ELIMINAR
+                            Los registros que ligan a un anime con un genero
+                            Usando la Clausula WHERE con la condicion
+                            De que el id del anime almacenado coincida
+                            Con el id de mi Anime actual
+
+                            Ademas uso el Operador condicional AND
+                            Para que tambien se deba cumplir la segunda
+                            Condicion que consiste en los registros que
+                            En el Campo *genero_id* Contenga alguna de las ID
+                            De mi arreglo Gdelete,
+
+                            Esto lo logro usando el Operador *IN*
+                            Que es un abreviatrua para multiples Condiciones
+                            OR.
+                        
+                        - Cuarto envio la consulta para INSERTAR
+                            Un nuevo registro en la tabla anime_genre,
+                            Para evitar hacer muchas peticiones a la BD
+                            Uso el arreglo que contiene todos los valores
+                            A registrar en esta tabla con los pares de Valores
+                            (anime_id, genero_id) y los uno a una cadena
+                            usando el metodo .join() con el separadot ", "
+                            para que cada par de Valores quede separado
+                            Correctamente "(), ()"
+                    */
+                    generos.map((genero) => {
+                        genres.includes(genero.id) ? 
+                            genres.splice(genres.indexOf(genero.id), 1) :
+                            Gdelete.push(genero.id) 
+                    })
+
+                    genres.forEach(genero => {
+                        Ginsert.push(`(UUID_TO_BIN('${id}'), ${genero})`)
+                    })
+
+                    await connection.query(
+                        "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                        [id, Gdelete]
+                    )
+
+                    await connection.query(
+                        `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                    )
+                    
+                    await connection.commit()
+
+                }
+
+                if (keys.length){
+
+                    const [result] = await connection.query(query, values)
+
+                    await connection.commit()
+                }
+
             }
+            
+            
+            
 
         } catch (e) {
             console.log("Error actualizando el Anime: ", e)
