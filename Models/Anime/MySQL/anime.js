@@ -260,31 +260,23 @@ export class AnimeModel {
                 })
 
                 genres.forEach(genero => {
-                    Ginsert.push(`(${id}, ${genero})`)
+                    Ginsert.push(`(UUID_TO_BIN('${id}'), ${genero})`)
                 })
 
-                await connection.query(
-                    "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
-                    [id, Gdelete]
-                )
-
-                await connection.query(
-                    `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
-                )
-
-                console.log(result)
-
-                if (result.affectedRows === 0) {
-
-                    console.log("No se encontro el anime o No se hicieron Cambios 400, Filas Afectadas: ", result.affectedRows)
-                    await connection.rollback()
-                    return false
-
-                } else {
-
-                    await connection.commit()
-
+                if (Gdelete.length) {
+                    await connection.query(
+                        "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                        [id, Gdelete]
+                    )
                 }
+                if (Ginsert.length) {
+                    await connection.query(
+                        `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                    )
+                }
+
+                await connection.commit()
+                
             } else {
 
                 if (genres.length) {
@@ -358,14 +350,17 @@ export class AnimeModel {
                         Ginsert.push(`(UUID_TO_BIN('${id}'), ${genero})`)
                     })
 
-                    await connection.query(
-                        "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
-                        [id, Gdelete]
-                    )
-
-                    await connection.query(
-                        `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
-                    )
+                    if (Gdelete.length) {
+                        await connection.query(
+                            "DELETE FROM anime_genre WHERE anime_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                            [id, Gdelete]
+                        )
+                    }
+                    if (Ginsert.length) {
+                        await connection.query(
+                            `INSERT INTO anime_genre (anime_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                        )
+                    }
                     
                     await connection.commit()
 
@@ -375,7 +370,19 @@ export class AnimeModel {
 
                     const [result] = await connection.query(query, values)
 
-                    await connection.commit()
+                    console.log(result)
+
+                    if (result.affectedRows === 0) {
+
+                        console.log("No se encontro el anime o No se hicieron Cambios 400, Filas Afectadas: ", result.affectedRows)
+                        await connection.rollback()
+                        return false
+
+                    } else {
+
+                        await connection.commit()
+
+                    }
                 }
 
             }
