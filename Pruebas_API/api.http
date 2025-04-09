@@ -1,4 +1,4 @@
-GET http://localhost:3000/mangas?title=anna
+GET http://localhost:3000/mangas?genre=2&title=The
 
 ###
 
@@ -151,3 +151,11 @@ Content-Type: application/json
     
     "genre": [1, 2, 7]
 }
+
+### Probando los parametros de Ruta en la ruta animes
+
+GET http://localhost:3000/animes?genre=2
+
+###
+
+GET http://localhost:3000/animes?genre=2&title=SOLO
