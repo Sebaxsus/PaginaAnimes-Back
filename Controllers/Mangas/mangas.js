@@ -70,7 +70,10 @@ export class MangasController {
         const result = validatePartialManga(req.body)
 
         if (!result.success) {
-            return res.status(404).json({ error: JSON.parse(result.error.message) })
+            return res.status(404).json({ 
+                error: JSON.parse(result.error.message),
+                message: "Error!, No se pudo actualizar el Manga"
+            })
         }
 
         const { id } = req.params
@@ -78,10 +81,17 @@ export class MangasController {
         const updateManga = await MangaModel.update({ id: id,input: result.data })
 
         if (typeof(updateManga) === "boolean") {
-            return res.status(404).json({ message: "No se encontre el Manga con ese Id" })
+            return res.status(404).json({ 
+                message: "No se encontre el Manga con ese Id",
+                code: 404,
+            })
         }
 
-        return res.json(updateManga)
+        return res.status(200).json({
+            message: "El manga se actualizo con exito",
+            code: 200,
+            updateManga: [updateManga]
+        })
 
     }
 
@@ -92,10 +102,13 @@ export class MangasController {
         const result = await MangaModel.delete({ id: id })
 
         if (result === false) {
-            res.status(404).json({ message: "No se encontro el Manga con ese Id" })
+            res.status(404).json({ 
+                message: "No se encontro el Manga con ese Id",
+                code: 404
+            })
         }
-
-        return res.json({ message: "Manga Deleted" })
+        res.append('Delete-Status', `200 ${result} Manga Eliminado`)
+        return res.status(204).send("Manga Elminidao!")
 
     }
 

@@ -5,9 +5,9 @@ export class AnimeController {
 
     static async getAll(req, res) {
         console.log(`Peticion GET Anime desde: ${req.header('origin')}`)
-        const { title } = req.query
+        const { title, genre } = req.query
 
-        const anime = await AnimeModel.getAll({title})
+        const anime = await AnimeModel.getAll({ genre, title})
 
         if (anime instanceof Error) {
             console.error(anime)
@@ -69,7 +69,8 @@ export class AnimeController {
 
         if (result.error) {
             return res.status(400).json({
-                message: "Error!, No se pudo actualizar el Anime"
+                message: "Error!, No se pudo actualizar el Anime",
+                error: JSON.parse(result.error.message)
             })
         }
 
