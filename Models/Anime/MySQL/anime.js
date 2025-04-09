@@ -15,13 +15,34 @@ export class AnimeModel {
 
     }
 
-    static async getAll({title}) {
+    static async getAll({ genre, title}) {
+
+        if (genre && title) {
+            const lowerTitle = title.toLowerCase() + "%"
+
+            const [animesQ, queryStructure] = await connection.query(
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, genero.name FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC;",
+                [genre, lowerTitle]
+            )
+
+            const animes = await Promise.all(
+                animesQ.map(async (anime) => {
+                    const [generos, struct] = await connection.query(
+                        "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                        [anime.id]
+                    )
+                    return {...anime, genre: generos}
+                })
+            )
+
+            return animes
+        }
         
         if (title) {
             const lowerTitle = title.toLowerCase() + "%"
 
             const [animesQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?);",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
                 [lowerTitle]
             )
             
@@ -39,9 +60,29 @@ export class AnimeModel {
             return animes
         }
 
-        if (title === undefined) {
+        if (genre) {
+
+            const [animesG, queryStructure] = await connection.query(
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC;",
+                [genre]
+            )
+
+            const animes = await Promise.all(
+                animesG.map(async (anime) => {
+                    const [generos, struct] = await connection.query(
+                        "SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);",
+                        [anime.id]
+                    )
+                    return {...anime, genre: generos}
+                })
+            )
+
+            return animes
+        }
+
+        if (genre === undefined && title === undefined) {
             const [animeQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime;"
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime ORDER BY id DESC;"
             )
 
             const anime = await Promise.all(
@@ -94,7 +135,7 @@ export class AnimeModel {
         const {
             genre: genreData,
             title,
-            desc,
+            description,
             img,
         } = data
 
@@ -106,7 +147,7 @@ export class AnimeModel {
 
             const result = await connection.query(
                 "INSERT INTO anime (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
-                [uuid, title, desc, img]
+                [uuid, title, description, img]
             )
 
             await Promise.all(
