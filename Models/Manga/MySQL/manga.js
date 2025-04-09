@@ -19,12 +19,34 @@ export class MangaModel {
 
     static async getAll({ genre, title }) {
 
+        if (genre && title) {
+
+            const LowerTitle = title.toLowerCase() + "%"
+
+            const [mangasQ, queryStructure] = await connection.query(
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC;",
+                [genre, LowerTitle]
+            )
+            
+            const mangas = await Promise.all(
+                mangasQ.map(async (manga) => {
+                    const [generos, struct] = await connection.query(
+                        "SELECT genero.id, genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                        [manga.id]
+                    )
+                    return {...manga, genre: generos }
+                })
+            )
+
+            return mangas
+        }
+
         if (title) {
 
             const LowerTitle = title.toLowerCase() + "%"
 
             const [mangasQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE LOWER(title) LIKE LOWER(?);",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
                 [LowerTitle]
             )
 
@@ -44,11 +66,19 @@ export class MangaModel {
 
         if (genre) {
 
-            const LowerGenre = genre.toLowerCase()
-
-            const [mangas, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, genero.name FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE LOWER(genero.name) = LOWER(?);",
+            const [mangasG, queryStructure] = await connection.query(
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC;",
                 [genre]
+            )
+
+            const mangas = await Promise.all(
+                mangasG.map(async (manga) => {
+                    const [generos, struct] = await connection.query(
+                        "SELECT genero.id, genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                        [manga.id]
+                    )
+                    return {...manga, genre: generos}
+                })
             )
 
             return mangas
@@ -57,7 +87,7 @@ export class MangaModel {
         if (genre === undefined && title === undefined) {
             // Obtengo todos los mangas almacenados en la tabla
             const [mangasT, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga;"
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga ORDER BY id DESC;"
             )
             // Espero el array de promesas que me genera el mangasT.map(async)
             // Necesito que sea una promesa para poder hacer la consulta sobre -
@@ -114,7 +144,7 @@ export class MangaModel {
         const {
             genre: genreInput,
             title,
-            desc,
+            description,
             img,
         } = input
 
@@ -126,7 +156,7 @@ export class MangaModel {
 
             const result = await connection.query(
                 "INSERT INTO manga (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
-                [uuid, title, desc, img]
+                [uuid, title, description, img]
             )
 
             await Promise.all(
@@ -197,6 +227,8 @@ export class MangaModel {
         const keys = []
         const values = []
         let genres = []
+        const Gdelete = []
+        const Ginsert = []
 
         Object.entries(input).map(([key, value]) => {
             if (value !== undefined) {
@@ -209,7 +241,7 @@ export class MangaModel {
             }
         })
 
-        if (keys.length === 0) {
+        if (keys.length === 0 && genres.length === 0) {
             console.error("No se pasaron campos en la peticion! 404")
             return false
             throw new Error("No se pasaron campos en la peticion! 404")
@@ -222,22 +254,93 @@ export class MangaModel {
         try {
             await connection.beginTransaction()
 
-            const [result] = await connection.query(query, values)
+            const [generos] = await connection.query(
+                "SELECT genero.id, genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
+                [id]
+            )
 
-            const [resultGenres] = genres?.length ? await Promise.all(
-                genres.map(async (genero) => {
-                    "INSERT INTO manga_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), ?);",
-                    [id, genero]
+            if (keys.length && genres.length)  {
+
+                console.log("Se cambiaran los siguientes datos: ", keys, genres)
+
+                const [result] = await connection.query(query, values)
+    
+                generos.map((genero) => {
+                    genres.includes(genero.id) ?
+                        genres.splice(genres.indexOf(genero.id), 1) :
+                        Gdelete.push(genero.id)
                 })
-            ) : null
+                
+                genres.forEach(genero => {
+                    Ginsert.push(`(UUID_TO_BIN('${id}'), ${genero})`)
+                })
 
-            if (result.affectedRows === 0 || resultGenres === null) {
-                console.log("No se encontro la Manga o No se hicieron Cambios, Filas Afectadas: ", result.affectedRows)
-                await connection.rollback()
-                return false
-            } else {
+                if (Gdelete.length) {
+                    await connection.query(
+                        "DELETE FROM manga_genre WHERE manga_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                        [id, Gdelete]
+                    )
+                }
+
+                if (Ginsert.length) {
+                    await connection.query(
+                        `INSERT INTO manga_genre (manga_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                    )
+                }
+
                 await connection.commit()
+
+            } else {
+
+                if (genres.length) {
+
+                    console.log("Se cambiaran los siguientes generos: ", genres)
+
+                    generos.map((genero) => {
+                        genres.includes(genero.id) ?
+                            genres.splice(genres.indexOf(genero.id), 1) :
+                            Gdelete.push(genero.id)
+                    })
+
+                    genres.forEach(genero => {
+                        Ginsert.push(`(UUID_TO_BIN('${id}'), ${genero})`)
+                    })
+
+                    if (Gdelete.length) {
+                        await connection.query(
+                            "DELETE FROM manga_genre WHERE manga_id = UUID_TO_BIN(?) AND genero_id IN (?);",
+                            [id, Gdelete]
+                        )
+                    }
+
+                    if (Ginsert.length) {
+                        await connection.query(
+                            `INSERT INTO manga_genre (manga_id, genero_id) VALUES ${Ginsert.join(", ")};`
+                        )
+                    }
+
+                    await connection.commit()
+
+                }
+
             }
+
+            if (keys.length) {
+                
+                const [result] = await connection.query(query, values)
+                
+                console.log(result)
+
+                if (result.affectedRows === 0) {
+                    console.log("No se encontro la Manga o No se hicieron Cambios, Filas Afectadas: ", result.affectedRows)
+                    await connection.rollback()
+                    return false
+                } else {
+                    await connection.commit()
+                }
+                
+            }
+
 
         } catch (e) {
             console.log("Error actualizando el Manga:", e)
