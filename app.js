@@ -5,6 +5,7 @@ import { mangasRouter } from './routes/mangasRouter.js'
 import { animeRouter } from './routes/animesRouter.js'
 import { corsMiddleware } from './Middleware/cors.js'
 import { generoRouter } from './routes/generosRouter.js'
+import { searchRouter } from './routes/searchRouter.js'
 // Aqui va el import a la BD MySql
 
 const PORT = process.env.PORT ?? 3000
@@ -29,6 +30,10 @@ app.use('/animes', animeRouter)
 // Escuchar la ruta "/generos"
 
 app.use('/generos', generoRouter)
+
+//Escuchar la ruta "/search"
+
+app.use('/search', searchRouter)
 
 // En cuanto a los metodos Complejos me toca esperar a la base de Datos para sacar su id de ahi
 // Recordar que los Metodos Complejos son PUT/PATCH/DELETE

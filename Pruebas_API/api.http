@@ -159,3 +159,7 @@ GET http://localhost:3000/animes?genre=2
 ###
 
 GET http://localhost:3000/animes?genre=2&title=SOLO
+
+### Probando la Nueva ruta /search
+
+GET http://localhost:3000/search?title=E
