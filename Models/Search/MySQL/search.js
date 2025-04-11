@@ -42,8 +42,9 @@ export class searchModel {
 
             const data = await Promise.all(
                 result.map(async (row) => {
+                    const type = row.type
                     const [generos, generoStruc] = await connection.query(
-                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${row.type}_genre ON genero.id = ${row.type}_genre.genero_id WHERE ${row.type}_genre.${row.type}_id = UUID_TO_BIN(?);`,
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${type}_genre ON genero.id = ${type}_genre.genero_id WHERE ${type}_genre.${type}_id = UUID_TO_BIN(?);`,
                         [row.id]
                     )
 
@@ -74,8 +75,9 @@ export class searchModel {
 
             const data = await Promise.all(
                 result.map(async (row) => {
+                    const type = row.type
                     const [generos, generoStruc] = await connection.query(
-                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${row.type}_genre ON genero.id = ${row.type}_genre.genero_id WHERE ${row.type}_genre.${row.type}_id = UUID_TO_BIN(?);`,
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${type}_genre ON genero.id = ${type}_genre.genero_id WHERE ${type}_genre.${type}_id = UUID_TO_BIN(?);`,
                         [row.id]
                     )
 
@@ -94,16 +96,17 @@ export class searchModel {
             con base en el genero.
             */
             const [result, resultStruct] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img,anime_genre.genero_id, 'anime' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? UNION ALL SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img,manga_genre.genero_id, 'manga' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ?;"
-                ,[genre, genre]
+                "SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img,anime_genre.genero_id, 'anime' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? UNION ALL SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img,manga_genre.genero_id, 'manga' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ?;",
+                [genre, genre]
             )
 
             const data = await Promise.all(
                 result.map(async (row) => {
-
-                    const query = `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${row.type}_genre ON genero.id = ${row.type}_genre.genero_id WHERE ${row.type}_genre.${row.type}_id = UUID_TO_BIN(?);`
+                    const type = row.type
+ 
                     const [generos, generoStruc] = await connection.query(
-                        query,[row.id]
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${type}_genre ON genero.id = ${type}_genre.genero_id WHERE ${type}_genre.${type}_id = UUID_TO_BIN(?);`,
+                        [row.id]
                     )
 
                     return {...row, genre: generos}
@@ -122,7 +125,24 @@ export class searchModel {
         con sus relaciones de generos. 😫
         */
         if (title === undefined && genre === undefined) {
-            return {message: "Debe tener al menos un filtro!!", code: 400}
+            const [result, resultStruct] = await connection.query(
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'anime' as type FROM anime UNION ALL SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'manga' as type FROM manga;"
+            )
+
+            const data = await Promise.all(
+                result.map(async (row) => {
+                    const type = row.type
+
+                    const [generos, generoStruc] = await connection.query(
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${type}_genre ON genero.id = ${type}_genre.genero_id WHERE ${type}_genre.${type}_id = UUID_TO_BIN(?);`,
+                        [row.id]
+                    )
+
+                    return {...row, genre: generos}
+                })
+            )
+
+            return data
         }
 
         return new Error("Que paso? 😒")
