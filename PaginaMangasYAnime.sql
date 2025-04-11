@@ -19,8 +19,8 @@ CREATE TABLE genero (
 );
 
 CREATE TABLE manga_genre (
-	manga_id BINARY(16) REFERENCES mangas(id),
-    genero_id INT REFERENCES generos(id),
+	manga_id BINARY(16) REFERENCES manga(id),
+    genero_id INT REFERENCES genero(id),
     PRIMARY KEY (manga_id, genero_id)
 );
 
@@ -81,7 +81,7 @@ SELECT BIN_TO_UUID(manga.id), manga.title, manga.description, manga.img FROM man
 
 SELECT BIN_TO_UUID(manga.id), manga.title, manga.description, manga.img, genero.name FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE LOWER(genero.name) = LOWER("Drama");
 
--- Intento de obtener los generos ligados a un id [ NO SIRVE ]
+-- Intento de obtener los generos ligados a un id [ NO SIRVE ] #########
 
 SELECT genero.name from genero, manga_genre WHERE manga_genre.manga_id = UUID_TO_BIN('14a1b59d-09e0-11f0-95b8-a8a15907d61f');
 
@@ -147,3 +147,76 @@ SELECT * FROM anime_genre WHERE anime_genre.anime_id = UUID_TO_BIN("222ab2bd-0b1
 SELECT genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN("222ab2bd-0b17-4e4e-8037-194e6e53038b");
 -- Probando la respuesta a una consulta con una UUID Valida y Existente pero sin datos almacenados en la tabla anime_genre
 SELECT genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN('229786cc-0f92-11f0-a178-a8a15907d61f');
+
+-- Obtener un anime usando su titulo Literal
+
+SELECT BIN_TO_UUID(anime.id), anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) = LOWER("TRAGONES Y MAZMoRRAS");
+
+-- Obtener los animes ligados a un nombre de genero
+
+SELECT BIN_TO_UUID(anime.id), anime.title, anime.description, anime.img, genero.name FROM ( ( anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE LOWER(genero.name) = LOWER("Drama");
+
+-- Intento de obtener los generos ligados a un id [ NO SIRVE ] #########
+
+SELECT genero.name from genero, anime_genre WHERE anime_genre.anime_id = UUID_TO_BIN('72d0fe32-0e86-11f0-80b3-a8a15907d61f');
+
+-- Obtener los generos ligados a un id de un anime
+
+SELECT genero.name from genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN('72d0fe32-0e86-11f0-80b3-a8a15907d61f');
+
+-- Mostrar los generos y sus id ligados a un Anime-Manga 
+
+SELECT genero.name, genero.id from genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN('72d0fe32-0e86-11f0-80b3-a8a15907d61f');
+
+SELECT * FROM anime_genre;
+
+SELECT * FROM genero;
+-- Como combinar dos campos de una tabla en una sola columna en la respuesta
+-- Hay varias formas | https://stackoverflow.com/questions/5340064/select-2-columns-in-one-and-combine-them
+-- Forma 1. (campo1 + campo2) as nombreDeColumna
+-- Forma 2. CONCAT(campo1, campo2) as nombreDeColumna
+SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, CONCAT(genero.id, ' ', genero.name) as genre FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id) WHERE genero.id = 1 ORDER BY anime.id DESC;
+
+SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, CONCAT(COALESCE(genero.id), " ", COALESCE(genero.name) ) as genre FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id) WHERE genero.id = 1;
+
+SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, (genero.id + genero.name) as genre FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id) WHERE genero.id = 1;
+
+SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, (genero.id || genero.name) as genre FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id) WHERE genero.id = 1;
+
+-- Consulta para filtrar los datos de las cuatro (4) tablas usando como
+-- filtro los titulo y los generos ligados a los (manga, anime)
+-- Para lograr esto en una solo consulta se uso el OPERADOR UNION ALL
+-- ya que este operador no hace uso del DISTINCT y por ende los tiempo
+-- de respuesta seran menores a usar el UNION
+SELECT anime.id,anime.title,anime.description,anime.img,anime_genre.genero_id FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = 1 AND lower(anime.title) LIKE lower("E%")
+UNION ALL
+SELECT manga.id,manga.title,manga.description,manga.img,manga_genre.genero_id FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = 1 AND lower(manga.title) LIKE lower("E%");
+
+-- Consulta para filtrar los datos de las dos tablas (anime,manga)
+-- usando el genero como filtro/condicion
+SELECT anime.id,anime.title,anime.description,anime.img,anime_genre.genero_id FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = 1
+UNION ALL
+SELECT manga.id,manga.title,manga.description,manga.img,manga_genre.genero_id FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = 1;
+-- Consulta para filtrar los datos de las dos tablas (anime,manga)
+-- usando el titulo como filtro/condicion
+SELECT anime.id,anime.title,anime.description,anime.img FROM anime WHERE lower(anime.title) LIKE LOWER("E%")
+UNION ALL
+SELECT manga.id,manga.title,manga.description,manga.img FROM manga WHERE lower(manga.title) LIKE LOWER("E%");
+
+-- Al buscar los datos de las dos tablas (anime,manga) usar UNION en lugar
+-- de UNION ALL me ayuda a filtrar los (animes, mangas) que se repiten
+-- asumo que se debe al DISTINCT que usa UNION
+SELECT anime.id,anime.title,anime.description,anime.img FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id
+UNION
+SELECT manga.id,manga.title,manga.description,manga.img FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id;
+
+SELECT anime.id,anime.title,anime.description,anime.img FROM anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id
+UNION
+SELECT manga.id,manga.title,manga.description,manga.img FROM manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id;
+
+-- Ahora analizando como funciona el codigo desde el Back
+-- Usar UNION ALL es viable ya que no necesito usar el JOIN ya que las relaciones entre
+-- (anime,manga) y los generos las hago despues
+SELECT anime.id,anime.title,anime.description,anime.img FROM anime
+UNION ALL
+SELECT manga.id,manga.title,manga.description,manga.img FROM manga;
