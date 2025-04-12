@@ -161,7 +161,6 @@ export class MangaModel {
 
             await Promise.all(
                 genreInput.map(async (genre) => {
-                    genre = genre.toLowerCase()
                     const result = await connection.query(
                         "INSERT INTO manga_genre (manga_id, genero_id) VALUES (UUID_TO_BIN(?), ?);",
                         [uuid, genre]
@@ -185,7 +184,7 @@ export class MangaModel {
         )
 
         const [generos] = await connection.query(
-            "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.anime_id = UUID_TO_BIN(?);",
+            "SELECT genero.id,genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);",
             [uuid]
         )
 

@@ -152,7 +152,7 @@ export class AnimeModel {
 
             await Promise.all(
                 genreData.map(async (genero) => {
-                    genero = genero.toLowerCase()
+                    
                     const query = await connection.query(
                         "INSERT INTO anime_genre (anime_id,genero_id) VALUES (UUID_TO_BIN(?), ?);",
                         [uuid, genero]
@@ -168,7 +168,7 @@ export class AnimeModel {
         }
 
         const [anime] = await connection.query(
-            "SELCET BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE anime.id = UUID_TO_BIN(?);",
+            "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE anime.id = UUID_TO_BIN(?);",
             [uuid]
         )
 
