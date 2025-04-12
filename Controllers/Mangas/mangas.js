@@ -44,6 +44,7 @@ export class MangasController {
         if (result.error) {
             return res.status(400).json({
                 message: "Error!, No se pudo crear el Manga",
+                code: 400,
                 error: JSON.parse(result.error.message) 
             })
         }
