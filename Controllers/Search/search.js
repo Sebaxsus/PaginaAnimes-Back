@@ -29,4 +29,24 @@ export class searchController {
 
         return res.status(200).json(data)
     }
+
+    static async getRecent(req, res) {
+        console.log(`Peticion GET Recent Search desde: ${req.header('origin')}, req.params: ${req.params.type}`)
+        const { type } = req.params
+
+        console.log(type)
+
+        const data = await searchModel.getRecent({type})
+
+        if (data instanceof Error) {
+            console.error(data)
+            return res.status(500).json({message: "Error por causa desconocida " + data.message})
+        }
+       
+        if (data.message) {
+            return res.status(400).json(data)
+        }
+
+        return res.status(200).json(data)
+    }
 }

@@ -148,4 +148,99 @@ export class searchModel {
         return new Error("Que paso? 😒")
     }
 
+    static async getRecent({type}) {
+
+        // Type = 1 Significa que la peticion viene de mangas
+
+        if (type === "Mangas") {
+            /*
+            Aqui la consulta cambia, ya que no necesito las tablas
+            anime_genre y manga_genre como el filtro se hace con base en
+            El titulo y no los generos.
+
+            Al final para devolver todos los generos ligados a un dato
+            tengo que iterar atraves de las tablas genero y -
+            manga_genre, anime_genre por esto no necesito las tablas relacionales
+            en mi consulta con filtro.
+            */
+            const [result, resultStruct] = await connection.query(
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga ORDER BY id DESC LIMIT 4;"
+            )
+
+            const data = await Promise.all(
+                result.map(async (manga) => {
+                    const [generos, generoStruc] = await connection.query(
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN manga_genre ON genero.id = manga_genre.genero_id WHERE manga_genre.manga_id = UUID_TO_BIN(?);`,
+                        [manga.id]
+                    )
+
+                    return {...manga, genre: generos}
+                })
+            )
+
+            return data
+        }
+
+        // Type = 2 Significa que la peticion viene de Animes
+
+        if (type === "Animes") {
+            // console.log("Entro genre ")
+            /*
+            Esta consulta si necesita las tablas relacionales
+            anime_genre y manga_genre ya que el filtro se hace
+            con base en el genero.
+            */
+            const [result, resultStruct] = await connection.query(
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime ORDER BY id DESC LIMIT 4;"
+            )
+
+            const data = await Promise.all(
+                result.map(async (anime) => {
+ 
+                    const [generos, generoStruc] = await connection.query(
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN anime_genre ON genero.id = anime_genre.genero_id WHERE anime_genre.anime_id = UUID_TO_BIN(?);`,
+                        [anime.id]
+                    )
+
+                    return {...anime, genre: generos}
+                })
+            )
+
+            return data
+        }
+        /*
+        Aqui queria obligar a que la peticion contenga al menos un
+        filtro, ya que los datos de las dos tablas manga, anime ya
+        se almacenan en el cliente al renderizar.
+
+        Por ahora lo voy a dejar asi, ya lo cambiare para que si devuelva
+        los datos sin filtrar de las tres (3) tablas anime, manga y genero
+        con sus relaciones de generos. 😫
+        */
+
+        // Type = 0 Significa que la peticion viene del Home (Necesita datos de Mangas y Animes)
+        if (type === undefined || type === "All") {
+            const [result, resultStruct] = await connection.query(
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime ORDER BY id DESC LIMIT 2) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga ORDER BY id DESC LIMIT 2);"
+            )
+
+            const data = await Promise.all(
+                result.map(async (row) => {
+                    const type = row.type === "Mangas" ? "manga" : "anime"
+
+                    const [generos, generoStruc] = await connection.query(
+                        `SELECT genero.id, genero.name FROM genero RIGHT JOIN ${type}_genre ON genero.id = ${type}_genre.genero_id WHERE ${type}_genre.${type}_id = UUID_TO_BIN(?);`,
+                        [row.id]
+                    )
+
+                    return {...row, genre: generos}
+                })
+            )
+
+            return data
+        }
+
+        return new Error("Que paso? 😒")
+    }
+
 }
