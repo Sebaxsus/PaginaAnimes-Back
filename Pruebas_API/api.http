@@ -1,8 +1,28 @@
+### Mangas -------------------------------------------------------------------
+
+### Usando el metodo GET sin Query String o Parametro de Ruta
+
+GET http://localhost:3000/mangas
+
+### Usando el metodo GET con la Query String ? Key=Value probando el parametro genre
+
+GET http://localhost:3000/mangas?genre=2
+
+### Usando el metodo GET con la Query String ? Key=Value probando el parametro title
+
+GET http://localhost:3000/mangas?title=PRUEBA
+
+### Usando el metodo GET con la Query String ? Key=Value probando el parametro title y genre al la vez
+
 GET http://localhost:3000/mangas?genre=2&title=The
 
-###
+### Probando la Paginacion
 
-GET http://localhost:3000/mangas?title=En
+GET http://localhost:3000/mangas?page=2&limit=3
+
+### Usando el metodo GET con el parametro de ruta id
+
+GET http://localhost:3000/mangas/2cff6aca-0a95-11f0-84f1-a8a15907d61fc
 
 ### Post a la api rest
 ### Es Importante que las API estan abiertas a recibir todo typo de parametros
@@ -18,18 +38,6 @@ Content-Type: application/json
     "img": "http://A.jpg",
     "genre": [3,2]
 }
-
-### Usando el metodo GET sin Query String o Parametro de Ruta
-
-GET http://localhost:3000/mangas
-
-### Usando el metodo GET con la Query String ? Key=Value
-
-GET http://localhost:3000/mangas?title=PRUEBA
-
-### Usando el metodo GET con el parametro de ruta id
-
-GET http://localhost:3000/mangas/2cff6aca-0a95-11f0-84f1-a8a15907d61fc
 
 ### Usando el metod POST | Probando las validaciones de ZOD
 
@@ -51,13 +59,41 @@ Content-Type:  application/json
     "title": "Patch Post 1"
 }
 
+### ANIMES -------------------------------------------------------------------
+
 ### Usando la nueva ruta de animes con el metodo GET
 
 GET http://localhost:3000/animes
 
+### Usando el atributo title del Metodo GET para buscar Animes por un titulo
+
+GET http://localhost:3000/animes?title=One
+
+### Probando los parametros de Ruta en la ruta animes
+
+GET http://localhost:3000/animes?genre=2
+
+### Usando el metodo GET con la Query String ? Key=Value probando el parametro title y genre al la vez
+
+GET http://localhost:3000/animes?genre=2&title=SOLO
+
+### Probando la paginacion en la ruta animes
+
+GET http://localhost:3000/animes?page=2
+
 ### Usando el metodo GET con el parametro de ruta id
 
 GET http://localhost:3000/animes/72d0fe32-0e86-11f0-80b3-a8a15907d61f
+
+### Usando el metodo GET con el parametro de ruta id
+### Con una UUID valida pero no existente en la Base de Datos
+
+GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
+
+### Probando el retorno del Metodo GET By Id cuando no hay
+### generos ligados al anime
+
+GET http://localhost:3000/animes/229786cc-0f92-11f0-a178-a8a15907d61f
 
 ### Usando el metodo POST pero con la propiedad img erronea
 ### Ya que no es una URL Valida
@@ -120,28 +156,6 @@ Content-Type: application/json
     "img": "https://github.com/validatorjs/validator.js/blob/master/src/lib/isURL.js"
 }
 
-### Usando el metodo DELETE en la ruta animes
-
-DELETE http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
-
-### Usando el atributo title del Metodo GET para buscar Animes por un titulo
-
-GET http://localhost:3000/animes?title=One
-
-### Usando el metodo GET con el parametro de ruta id
-### Con una UUID valida pero no existente en la Base de Datos
-
-GET http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
-
-### Probando el retorno del Metodo GET By Id cuando no hay
-### generos ligados al anime
-
-GET http://localhost:3000/animes/229786cc-0f92-11f0-a178-a8a15907d61f
-
-### Usando el nuevo recurso y routa de la API
-
-GET http://localhost:3000/generos
-
 ### Prueba Patch con generos
 
 PATCH http://localhost:3000/animes/229786cc-0f92-11f0-a178-a8a15907d61f
@@ -152,14 +166,41 @@ Content-Type: application/json
     "genre": [1, 2, 7]
 }
 
-### Probando los parametros de Ruta en la ruta animes
+### Usando el metodo DELETE en la ruta animes
 
-GET http://localhost:3000/animes?genre=2
+DELETE http://localhost:3000/animes/222ab2bd-0b17-4e4e-8037-194e6e53038b
 
-###
+### Generos -------------------------------------------------------------------
 
-GET http://localhost:3000/animes?genre=2&title=SOLO
+### Usando el nuevo recurso y routa de la API
+
+GET http://localhost:3000/generos
+
+### Search -------------------------------------------------------------------
 
 ### Probando la Nueva ruta /search
 
+GET http://localhost:3000/search
+
+### Usando el metodo getAll con el query String ? key=value title
+
 GET http://localhost:3000/search?title=E
+
+### Usando el metodo getAll con el Query String ? key=value genre
+
+GET http://localhost:3000/search?genre=2
+
+### Usando el metodo getAll con el Query String ? key=value page
+
+GET http://localhost:3000/search?page=2
+
+### Usando el metodo getAll con los query String ? key=value title&genre
+
+GET http://localhost:3000/search?title=Pr&genre=1
+
+### Usando el metodo getAll con los query String ? key=value title&genre&page
+### Aqui estoy probando que pasa si solicito una pagina mayor
+### al total de paginas es decir que si tengo 1 pagina disponible
+### y le pido la pagina 2 que pasaria
+
+GET http://localhost:3000/search?title=Pr&genre=1&page=2

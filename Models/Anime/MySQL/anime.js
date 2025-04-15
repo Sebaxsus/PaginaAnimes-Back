@@ -15,13 +15,18 @@ export class AnimeModel {
 
     }
 
-    static async getAll({ genre, title}) {
+    static async getAll({ genre, title, limit, offset }) {
 
         if (genre && title) {
             const lowerTitle = title.toLowerCase() + "%"
 
             const [animesQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, genero.name FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
+                [genre, lowerTitle, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC;",
                 [genre, lowerTitle]
             )
 
@@ -35,14 +40,19 @@ export class AnimeModel {
                 })
             )
 
-            return animes
+            return [animes, totalResult[0].total]
         }
         
         if (title) {
             const lowerTitle = title.toLowerCase() + "%"
 
             const [animesQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
+                [lowerTitle, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
                 [lowerTitle]
             )
             
@@ -57,13 +67,18 @@ export class AnimeModel {
                 })
             )
 
-            return animes
+            return [animes, totalResult[0].total]
         }
 
         if (genre) {
 
             const [animesG, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
+                [genre, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC;",
                 [genre]
             )
 
@@ -77,12 +92,17 @@ export class AnimeModel {
                 })
             )
 
-            return animes
+            return [animes, totalResult[0].total]
         }
 
         if (genre === undefined && title === undefined) {
             const [animeQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime ORDER BY id DESC;"
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime ORDER BY id DESC LIMIT ? OFFSET ?;",
+                [limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM anime ORDER BY id DESC;"
             )
 
             const anime = await Promise.all(
@@ -97,7 +117,7 @@ export class AnimeModel {
                 })
             )
 
-            return anime
+            return [anime, totalResult[0].total]
         }
 
         return new Error("Que paso? 🤨")

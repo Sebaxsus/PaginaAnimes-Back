@@ -10,15 +10,29 @@ export class MangasController {
     static async getAll (req, res) {
         console.log(`Peticion Get Manga desde: `, req.header('origin'))
         // Desestructurando el objeto req.query
-        const { title, genre } = req.query
-        const mangas = await MangaModel.getAll({ genre, title })
+        const { title, genre, limit = 6, page = 1 } = req.query
+
+        const offset = (parseInt(page) - 1) * parseInt(limit)
+
+        const mangas = await MangaModel.getAll({ genre, title, limit: parseInt(limit), offset})
 
         if (mangas instanceof Error) {
             console.error(mangas)
             return res.status(500).json({message: "Error interno " + mangas.message})
         }
 
-        res.status(200).json(mangas)
+        const totalPages = Math.ceil(mangas[1] / parseInt(limit))
+
+        res.status(200).json({data: mangas[0], pagination:
+            {
+                currentPage: parseInt(page),
+                pageSize: parseInt(limit),
+                totalPages,
+                totalRows: mangas[1],
+                hasNext: parseInt(page) < totalPages,
+                hasPrevius: parseInt(page) > 1,
+            }
+        })
     }
 
     static async getById (req, res) {

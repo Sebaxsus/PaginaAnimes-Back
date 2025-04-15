@@ -5,16 +5,30 @@ export class AnimeController {
 
     static async getAll(req, res) {
         console.log(`Peticion GET Anime desde: ${req.header('origin')}`)
-        const { title, genre } = req.query
+        const { title, genre, limit = 6, page = 1 } = req.query
 
-        const anime = await AnimeModel.getAll({ genre, title})
+        const offset = (parseInt(page) - 1) * parseInt(limit)
+
+        const anime = await AnimeModel.getAll({ genre, title, limit: parseInt(limit), offset })
 
         if (anime instanceof Error) {
             console.error(anime)
             return res.status(500).json({message: "Error por causa desconocida " + anime.message})
         }
 
-        return res.status(200).json(anime)
+        const totalPages = Math.ceil(anime[1] / parseInt(limit))
+
+        return res.status(200).json({
+            data: anime[0],
+            pagination: {
+                currentPage: parseInt(page),
+                pageSize: parseInt(limit),
+                totalPages,
+                totalRows: anime[1],
+                hasNext: parseInt(page) < totalPages,
+                hasPrevius: parseInt(page) > 1,
+            }
+        })
     }
 
     static async getById(req, res) {

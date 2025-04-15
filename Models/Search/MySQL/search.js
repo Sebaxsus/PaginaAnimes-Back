@@ -12,7 +12,7 @@ const connection = await mysql.createConnection(config)
 
 export class searchModel {
 
-    static async getAll({title, genre}) {
+    static async getAll({title, genre, limit, offset}) {
 
         // console.log(title, genre)
 
@@ -36,7 +36,12 @@ export class searchModel {
             de las dos tablas sin tener que unir dos respuestas.
             */
             const [result, resultStruct] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? AND lower(anime.title) LIKE lower(?) UNION ALL SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? AND lower(manga.title) LIKE lower(?);" 
+                "(SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? AND lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? AND lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);" 
+                ,[genre, lowerTitle, limit, offset, genre, lowerTitle, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT (SELECT COUNT(*) as total FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? AND lower(anime.title) LIKE lower(?) ) + (SELECT COUNT(*) as total FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? AND lower(manga.title) LIKE lower(?) ) as total;" 
                 ,[genre, lowerTitle, genre, lowerTitle]
             )
 
@@ -52,7 +57,7 @@ export class searchModel {
                 })
             )
 
-            return data
+            return [data, totalResult[0].total]
         }
 
         if (title) {
@@ -69,7 +74,12 @@ export class searchModel {
             en mi consulta con filtro.
             */
             const [result, resultStruct] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime WHERE lower(anime.title) LIKE lower(?) UNION ALL SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga WHERE lower(manga.title) LIKE lower(?);"
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime WHERE lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga WHERE lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);"
+                ,[lowerTitle, limit, offset, lowerTitle, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT (SELECT COUNT(*) as total FROM anime WHERE lower(anime.title) LIKE lower(?) ) + (SELECT COUNT(*) as total FROM manga WHERE lower(manga.title) LIKE lower(?) ) as total;"
                 ,[lowerTitle, lowerTitle]
             )
 
@@ -85,7 +95,7 @@ export class searchModel {
                 })
             )
 
-            return data
+            return [data, totalResult[0].total]
         }
 
         if (genre) {
@@ -96,7 +106,12 @@ export class searchModel {
             con base en el genero.
             */
             const [result, resultStruct] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img,anime_genre.genero_id, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? UNION ALL SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img,manga_genre.genero_id, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ?;",
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? LIMIT ? OFFSET ?);",
+                [genre, limit, offset, genre, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT (SELECT COUNT(*) as total  FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? ) + (SELECT COUNT(*) as total FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? ) as total;",
                 [genre, genre]
             )
 
@@ -113,7 +128,7 @@ export class searchModel {
                 })
             )
 
-            return data
+            return [data, totalResult[0].total]
         }
         /*
         Aqui queria obligar a que la peticion contenga al menos un
@@ -125,8 +140,14 @@ export class searchModel {
         con sus relaciones de generos. 😫
         */
         if (title === undefined && genre === undefined) {
+
             const [result, resultStruct] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime UNION ALL SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga;"
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga LIMIT ? OFFSET ?);",
+                [limit, offset, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT (SELECT COUNT(*) as total FROM anime ) + (SELECT COUNT(*) as total FROM manga ) as total;"
             )
 
             const data = await Promise.all(
@@ -142,7 +163,7 @@ export class searchModel {
                 })
             )
 
-            return data
+            return [data, totalResult[0].total]
         }
 
         return new Error("Que paso? 😒")

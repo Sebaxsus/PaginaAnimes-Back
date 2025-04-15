@@ -17,17 +17,24 @@ function getGeneros (id) {
 
 export class MangaModel {
 
-    static async getAll({ genre, title }) {
+    static async getAll({ genre, title, limit, offset}) {
+        
+        // console.log("Limit: ", limit, " Offset: ", offset)
 
         if (genre && title) {
 
             const LowerTitle = title.toLowerCase() + "%"
-
+ 
             const [mangasQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC;",
-                [genre, LowerTitle]
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
+                [genre, LowerTitle, limit, offset]
             )
             
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC;",
+                [genre, LowerTitle]
+            )
+
             const mangas = await Promise.all(
                 mangasQ.map(async (manga) => {
                     const [generos, struct] = await connection.query(
@@ -38,7 +45,7 @@ export class MangaModel {
                 })
             )
 
-            return mangas
+            return [mangas, totalResult[0].total]
         }
 
         if (title) {
@@ -46,7 +53,12 @@ export class MangaModel {
             const LowerTitle = title.toLowerCase() + "%"
 
             const [mangasQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
+                [LowerTitle, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC;",
                 [LowerTitle]
             )
 
@@ -61,13 +73,18 @@ export class MangaModel {
                     // generos?.length ? generos.map((genero) => {return [genero.id,genero.name]}) : generos
             }))
             
-            return mangas
+            return [mangas, totalResult[0].total]
         }
 
         if (genre) {
 
             const [mangasG, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
+                [genre, limit, offset]
+            )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC;",
                 [genre]
             )
 
@@ -81,14 +98,20 @@ export class MangaModel {
                 })
             )
 
-            return mangas
+            return [mangas, totalResult[0].total]
         }
         // Si la peticion no trae genero o title, genre y title sera undefined
         if (genre === undefined && title === undefined) {
             // Obtengo todos los mangas almacenados en la tabla
             const [mangasT, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga ORDER BY id DESC;"
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga ORDER BY id DESC LIMIT ? OFFSET ?;",
+                [limit, offset]
             )
+
+            const [totalResult] = await connection.query(
+                "SELECT COUNT(*) as total FROM manga ORDER BY id DESC;"
+            )
+
             // Espero el array de promesas que me genera el mangasT.map(async)
             // Necesito que sea una promesa para poder hacer la consulta sobre -
             // Los generos de cada Manga, para luego devolver un nuevo objeto que -
@@ -105,7 +128,7 @@ export class MangaModel {
                 })
             )
 
-            return mangas
+            return [mangas, totalResult[0].total]
         }
 
         return new Error("Que paso? 🤨")

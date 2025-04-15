@@ -4,7 +4,7 @@ import { validateSearch, validatePartialSearch } from "../../Schemas/searchSchem
 export class searchController {
 
     static async getAll(req, res) {
-        console.log(`Peticion GET Search desde: ${req.header('origin')}`)
+        console.log(`Peticion GET Search desde: ${req.header('origin')}, req.query: ${req.query.page}`)
         const result = validatePartialSearch(req.query)
         // console.log(result)
         if (result.error) {
@@ -14,9 +14,13 @@ export class searchController {
             })
         }
 
-        const {title, genre} = req.query
+        const {title, genre, limit = 6, page = 1} = req.query
 
-        const data = await searchModel.getAll({title, genre})
+        const limite = Math.ceil(parseInt(limit) / 2)
+
+        const offset = (parseInt(page) - 1) * limite
+
+        const data = await searchModel.getAll({title, genre, limit: limite, offset})
 
         if (data instanceof Error) {
             console.error(data)
@@ -27,14 +31,24 @@ export class searchController {
             return res.status(400).json(data)
         }
 
-        return res.status(200).json(data)
+        const totalPages = Math.ceil(data[1] / parseInt(limit))
+
+        return res.status(200).json({
+            data: data[0],
+            pagination: {
+                currentPage: parseInt(page),
+                pageSize: parseInt(limit),
+                totalPages,
+                totalRows: data[1],
+                hasNext: parseInt(page) < totalPages,
+                hasPrevius: parseInt(page) > 1,
+            }
+        })
     }
 
     static async getRecent(req, res) {
-        console.log(`Peticion GET Recent Search desde: ${req.header('origin')}, req.params: ${req.params.type}`)
+        console.log(`Peticion GET Recent Search desde: ${req.header('origin')}`)
         const { type } = req.params
-
-        console.log(type)
 
         const data = await searchModel.getRecent({type})
 
