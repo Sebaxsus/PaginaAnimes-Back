@@ -9,7 +9,8 @@ export class searchController {
         // console.log(result)
         if (result.error) {
             return res.status(400).json({
-                message: "Error!, No se pudo consultar",
+                title:"Error!",
+                message: "Type Error!, No se pudo consultar",
                 error: JSON.parse(result.error.message)
             })
         }
@@ -24,11 +25,11 @@ export class searchController {
 
         if (data instanceof Error) {
             console.error(data)
-            return res.status(500).json({message: "Error por causa desconocida " + data.message})
+            return res.status(500).json({ title:"Error!", message: "Error por causa desconocida " + data.message})
         }
        
         if (data.message) {
-            return res.status(400).json(data)
+            return res.status(400).json({title:"Internal Error!", message: data.message})
         }
 
         const totalPages = Math.ceil(data[1] / parseInt(limit))
@@ -54,11 +55,11 @@ export class searchController {
 
         if (data instanceof Error) {
             console.error(data)
-            return res.status(500).json({message: "Error por causa desconocida " + data.message})
+            return res.status(500).json({ title:"Error!", message: "Error por causa desconocida " + data.message})
         }
        
         if (data.message) {
-            return res.status(400).json(data)
+            return res.status(400).json({ title:"Error!", message: data.message})
         }
 
         return res.status(200).json(data)

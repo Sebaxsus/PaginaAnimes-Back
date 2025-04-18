@@ -18,7 +18,7 @@ export class MangasController {
 
         if (mangas instanceof Error) {
             console.error(mangas)
-            return res.status(500).json({message: "Error interno " + mangas.message})
+            return res.status(500).json({title:"Error!",message: "Error interno " + mangas.message})
         }
 
         const totalPages = Math.ceil(mangas[1] / parseInt(limit))
@@ -44,7 +44,7 @@ export class MangasController {
         //Si manga es distinto a null entonces devuelve manga
         if (manga instanceof Error) {
             //console.log(manga)
-            return res.status(404).json({ message: "Error 404, Not Found " + manga.message })
+            return res.status(404).json({ title:"Error!", message: "Error 404, Not Found " + manga.message })
         }
         
         return res.status(200).json(manga)
@@ -57,7 +57,8 @@ export class MangasController {
 
         if (result.error) {
             return res.status(400).json({
-                message: "Error!, No se pudo crear el Manga",
+                title:"Error!",
+                message: "Type Error!, No se pudo crear el Manga",
                 code: 400,
                 error: JSON.parse(result.error.message) 
             })
@@ -67,6 +68,7 @@ export class MangasController {
 
         if (newManga instanceof Error) {
             return res.status(500).json({
+                title:"Error!",
                 message: newManga.message,
                 code: 500
             })
@@ -86,8 +88,9 @@ export class MangasController {
 
         if (!result.success) {
             return res.status(404).json({ 
+                title:"Error!",
                 error: JSON.parse(result.error.message),
-                message: "Error!, No se pudo actualizar el Manga"
+                message: "Type Error!, No se pudo actualizar el Manga"
             })
         }
 
@@ -97,6 +100,7 @@ export class MangasController {
 
         if (typeof(updateManga) === "boolean") {
             return res.status(404).json({ 
+                title:"404!",
                 message: "No se encontre el Manga con ese Id",
                 code: 404,
             })

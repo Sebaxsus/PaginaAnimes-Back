@@ -42,7 +42,7 @@ export class AnimeController {
         //console.log(anime.message, "\n", typeof(anime), anime instanceof Error, anime.stack, anime.message)
         if (anime instanceof Error) {
             //console.log(anime)
-            return res.status(404).json({message: "Error 404, Not Found " + anime.message})
+            return res.status(404).json({title:"Error!",message: "Error 404, Not Found " + anime.message})
         }
 
         return res.status(200).json(anime)
@@ -54,7 +54,8 @@ export class AnimeController {
 
         if (result.error) {
             return res.status(400).json({
-                message: "Error!, No se pudo crear el Anime",
+                title:"Error!",
+                message: "Type Error!, No se pudo crear el Anime",
                 code: 400,
                 error: JSON.parse(result.error.message)
             })
@@ -64,6 +65,7 @@ export class AnimeController {
         
         if (newAnime instanceof Error) {
             return res.status(500).json({
+                title:"Error!",
                 message: newAnime.message,
                 code: 500
             })
@@ -84,7 +86,8 @@ export class AnimeController {
 
         if (result.error) {
             return res.status(400).json({
-                message: "Error!, No se pudo actualizar el Anime",
+                title:"Error!",
+                message: "Type Error!, No se pudo actualizar el Anime",
                 error: JSON.parse(result.error.message)
             })
         }
