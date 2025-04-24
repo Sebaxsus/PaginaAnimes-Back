@@ -21,7 +21,7 @@ export class AnimeModel {
             const lowerTitle = title.toLowerCase() + "%"
 
             const [animesQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(anime.title) LIKE LOWER(?) ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
                 [genre, lowerTitle, limit, offset]
             )
 
@@ -47,7 +47,7 @@ export class AnimeModel {
             const lowerTitle = title.toLowerCase() + "%"
 
             const [animesQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter FROM anime WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
                 [lowerTitle, limit, offset]
             )
 
@@ -73,7 +73,7 @@ export class AnimeModel {
         if (genre) {
 
             const [animesG, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter FROM ( (anime RIGHT JOIN anime_genre ON anime.id = anime_genre.anime_id) LEFT JOIN genero ON anime_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY anime.id DESC LIMIT ? OFFSET ?;",
                 [genre, limit, offset]
             )
 
@@ -97,7 +97,7 @@ export class AnimeModel {
 
         if (genre === undefined && title === undefined) {
             const [animeQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img FROM anime ORDER BY id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter FROM anime ORDER BY id DESC LIMIT ? OFFSET ?;",
                 [limit, offset]
             )
 
@@ -128,7 +128,7 @@ export class AnimeModel {
 
         try {
             const [anime] = await connection.query(
-                "SELECT BIN_TO_UUID(id) as id, title, description, img FROM anime WHERE id = UUID_TO_BIN(?);",
+                "SELECT BIN_TO_UUID(id) as id, title, description, img, chapter FROM anime WHERE id = UUID_TO_BIN(?);",
                 [id]
             )
     
@@ -157,6 +157,7 @@ export class AnimeModel {
             title,
             description,
             img,
+            chapters,
         } = data
 
         const [uuidResult] = await connection.query("SELECT UUID() uuid;")
@@ -166,8 +167,8 @@ export class AnimeModel {
             await connection.beginTransaction()
 
             const result = await connection.query(
-                "INSERT INTO anime (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
-                [uuid, title, description, img]
+                "INSERT INTO anime (id, title, description, img, chapter) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?);",
+                [uuid, title, description, img, chapters]
             )
 
             await Promise.all(

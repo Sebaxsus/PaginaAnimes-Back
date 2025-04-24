@@ -36,7 +36,7 @@ export class searchModel {
             de las dos tablas sin tener que unir dos respuestas.
             */
             const [result, resultStruct] = await connection.query(
-                "(SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? AND lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? AND lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);" 
+                "(SELECT BIN_TO_UUID(anime.id) as id,anime.title,anime.description,anime.img,anime.chapter, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? AND lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img,manga.chapter, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? AND lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);" 
                 ,[genre, lowerTitle, limit, offset, genre, lowerTitle, limit, offset]
             )
 
@@ -74,7 +74,7 @@ export class searchModel {
             en mi consulta con filtro.
             */
             const [result, resultStruct] = await connection.query(
-                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime WHERE lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga WHERE lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);"
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter, 'Animes' as type FROM anime WHERE lower(anime.title) LIKE lower(?) LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter, 'Mangas' as type FROM manga WHERE lower(manga.title) LIKE lower(?) LIMIT ? OFFSET ?);"
                 ,[lowerTitle, limit, offset, lowerTitle, limit, offset]
             )
 
@@ -106,7 +106,7 @@ export class searchModel {
             con base en el genero.
             */
             const [result, resultStruct] = await connection.query(
-                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? LIMIT ? OFFSET ?);",
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter, 'Animes' as type FROM anime JOIN anime_genre ON anime.id = anime_genre.anime_id WHERE anime_genre.genero_id = ? LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id,manga.title,manga.description,manga.img, manga.chapter, 'Mangas' as type FROM manga JOIN manga_genre ON manga.id = manga_genre.manga_id WHERE manga_genre.genero_id = ? LIMIT ? OFFSET ?);",
                 [genre, limit, offset, genre, limit, offset]
             )
 
@@ -142,7 +142,7 @@ export class searchModel {
         if (title === undefined && genre === undefined) {
 
             const [result, resultStruct] = await connection.query(
-                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, 'Animes' as type FROM anime LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, 'Mangas' as type FROM manga LIMIT ? OFFSET ?);",
+                "(SELECT BIN_TO_UUID(anime.id) as id, anime.title, anime.description, anime.img, anime.chapter, 'Animes' as type FROM anime LIMIT ? OFFSET ?) UNION ALL (SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter, 'Mangas' as type FROM manga LIMIT ? OFFSET ?);",
                 [limit, offset, limit, offset]
             )
 

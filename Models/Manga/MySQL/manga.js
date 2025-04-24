@@ -26,7 +26,7 @@ export class MangaModel {
             const LowerTitle = title.toLowerCase() + "%"
  
             const [mangasQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter FROM ( (manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? AND LOWER(manga.title) LIKE LOWER(?) ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
                 [genre, LowerTitle, limit, offset]
             )
             
@@ -53,7 +53,7 @@ export class MangaModel {
             const LowerTitle = title.toLowerCase() + "%"
 
             const [mangasQ, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter FROM manga WHERE LOWER(title) LIKE LOWER(?) ORDER BY id DESC LIMIT ? OFFSET ?;",
                 [LowerTitle, limit, offset]
             )
 
@@ -79,7 +79,7 @@ export class MangaModel {
         if (genre) {
 
             const [mangasG, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter FROM ( ( manga RIGHT JOIN manga_genre ON manga.id = manga_genre.manga_id) LEFT JOIN genero ON manga_genre.genero_id = genero.id ) WHERE genero.id = ? ORDER BY manga.id DESC LIMIT ? OFFSET ?;",
                 [genre, limit, offset]
             )
 
@@ -104,7 +104,7 @@ export class MangaModel {
         if (genre === undefined && title === undefined) {
             // Obtengo todos los mangas almacenados en la tabla
             const [mangasT, queryStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga ORDER BY id DESC LIMIT ? OFFSET ?;",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter FROM manga ORDER BY id DESC LIMIT ? OFFSET ?;",
                 [limit, offset]
             )
 
@@ -140,7 +140,7 @@ export class MangaModel {
         try {
             // ****** Esto parece estar mal, Ya que no devolvera las lista de generos del Manga. 0.o
             const [manga, mangaStructure] = await connection.query(
-                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img FROM manga WHERE id = UUID_TO_BIN(?);",
+                "SELECT BIN_TO_UUID(manga.id) as id, manga.title, manga.description, manga.img, manga.chapter FROM manga WHERE id = UUID_TO_BIN(?);",
                 [id]
             )
             
@@ -169,6 +169,7 @@ export class MangaModel {
             title,
             description,
             img,
+            chapters,
         } = input
 
         const [uuidResult] = await connection.query("SELECT UUID() uuid;")
@@ -178,8 +179,8 @@ export class MangaModel {
             await connection.beginTransaction()
 
             const result = await connection.query(
-                "INSERT INTO manga (id, title, description, img) VALUES (UUID_TO_BIN(?), ?, ?, ?);",
-                [uuid, title, description, img]
+                "INSERT INTO manga (id, title, description, img, chapter) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?);",
+                [uuid, title, description, img, chapters]
             )
 
             await Promise.all(
