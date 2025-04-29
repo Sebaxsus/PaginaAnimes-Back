@@ -23,7 +23,7 @@ const animeScheme = zod.object({
         }).positive({
             message: "El id del Genero debe ser positivo mayor que uno >(1)"
         }))
-        ,chapters: zod.number({
+        ,chapter: zod.number({
             invalid_type_error: "Los capitulos deben ser un numero",
             required_error: "Debe tener al menos un capitulo"
         }).positive()

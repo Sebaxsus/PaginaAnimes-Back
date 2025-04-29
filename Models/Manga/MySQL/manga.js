@@ -169,7 +169,7 @@ export class MangaModel {
             title,
             description,
             img,
-            chapters,
+            chapter,
         } = input
 
         const [uuidResult] = await connection.query("SELECT UUID() uuid;")
@@ -180,7 +180,7 @@ export class MangaModel {
 
             const result = await connection.query(
                 "INSERT INTO manga (id, title, description, img, chapter) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?);",
-                [uuid, title, description, img, chapters]
+                [uuid, title, description, img, chapter]
             )
 
             await Promise.all(
