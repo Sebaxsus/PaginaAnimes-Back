@@ -58,3 +58,8 @@ app.listen(PORT, () => {
 //     }
 //     res.send(200)
 // })
+
+
+// ------------------ Export para los test
+
+export default app

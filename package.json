@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "run test",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "dev": "nodemon ./app.js",
     "dev:1": "nodemon ./index.js",
     "dev:2": "nodemon ./app.js"
@@ -18,5 +18,9 @@
     "mysql2": "3.14.0",
     "nodemon": "3.1.9",
     "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.0"
   }
 }
