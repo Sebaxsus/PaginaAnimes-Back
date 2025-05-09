@@ -84,54 +84,54 @@ export class AuthModel {
 
         if (keys.length === 0) {
             console.error("No se pasaron campos en la Peticion!, 404")
-            return false
+            return new Error("No se pasaron campos para actualizar!")
         }
 
         // Debo asegurarme de enviar el email para poder
         // Obtener el id de usuario
-        const [{id}] = await connection.query(
+        const [id] = await connection.query(
             "SELECT id FROM usuario WHERE email = ?;",
             [data.email]
         )
     
-        values.push(id)
+        values.push(id[0].id)
 
         const query = `UPDATE usuario SET ${keys.join(", ")} where id = ?;`
-        console.log("Query pre act: ", query)
-        // try {
-        //     await connection.beginTransaction()
+        console.log("Query pre act: ", query, values)
+        try {
+            await connection.beginTransaction()
 
-        //     if (keys.length) {
+            if (keys.length) {
 
-        //         const [result] = await connection.query(query, values)
+                const [result] = await connection.query(query, values)
 
-        //         await connection.commit()
-        //     }
-        // } catch (e) {
-        //     console.log("Error al actualizar el usuario: ", e)
-        //     await connection.rollback()
-        //     return false
-        // }
+                await connection.commit()
+            }
+        } catch (e) {
+            console.log("Error al actualizar el usuario: ", e)
+            await connection.rollback()
+            return new Error("Fallo el servidor de manera inesperada al actualizar el usuario")
+        }
 
-        // const [updatedUser] = await connection.query(
-        //     "SELECT user, email FROM usuario WHERE id = ?;",
-        //     [id]
-        // )
+        const [updatedUser] = await connection.query(
+            "SELECT user, email FROM usuario WHERE id = ?;",
+            [id]
+        )
 
-        // return updatedUser
+        return updatedUser
     }
 
     static generarToken(usuario) {
         const token = crypto.randomBytes(32).toString('hex')
         
         const expires = Date.now() + (3600 * 1000) // 3600 Equivale a una hora en segundos | x 1000 para poner los segundos en milisegundos (3.600.000)
-        // console.log(`Entro generar token, usuario: ${usuario}, token: ${token}`)
+        // console.log(`Entro generar token, usuario: ${usuario}, token: ${token} |TokenExp: ${expires} Token segs: ${Math.floor((expires - Date.now()) / 1000)}`)
         tokens.set(token, {usuario, expires} )
         // console.log(`Token en el dict: ${tokens.get(token)}`)
         return {
             access_token: token,
             token_type: "Bearer",
-            expires_in: Math.floor((tokens.get(token).expires) / 1000)
+            expires_in: Math.floor((tokens.get(token).expires - Date.now() ) / 1000)
         }
         
     }

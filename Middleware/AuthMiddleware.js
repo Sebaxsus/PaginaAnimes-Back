@@ -10,7 +10,9 @@ export async function authMiddleware(req, res, next) {
             // Agregar un body
             return res.status(401).json(
                 {
-                    data: "Autorizacion rechazada por no haber token o Tipo de autorizacion no permitida"
+                    error: "Invalid_auth_type",
+                    message: "Autorizacion rechazada por no haber token o Tipo de autorizacion no permitida",
+                    code: 401,
                 }
             )
 
@@ -26,14 +28,16 @@ export async function authMiddleware(req, res, next) {
         if (!user) {
             return res.status(401).json({
                 error: "Invalid_User",
-                message:"Ese Token no existe!"
+                message:"Ese Token no existe!",
+                code: 401,
             })
         }
 
         if (expired) {
             return res.status(401).json({
                 error: "Token_Expired",
-                message: "El token expiro!"
+                message: "El token expiro!",
+                code: 401,
             })
         }
 
@@ -43,7 +47,11 @@ export async function authMiddleware(req, res, next) {
         next()
     } catch (e) {
         console.error("Fallo el middleware auth: ", e)
-        res.status(500).send("Hubo un error inesperado en el servidor")
+        return res.status(500).json({
+            error: "Fallo!",
+            message: "Hubo un error inesperado en el servidor",
+            code: 500,
+        })
     }
     
 }
@@ -60,7 +68,7 @@ export async function userMiddleware(req, res, next) {
                     title:"Error!",
                     message: "Type Error!, No se pudo validar el Usuario",
                     code: 400,
-                    error: JSON.parse(result.error.message)
+                    error: JSON.parse(result.error.message),
                 })
             }
     
@@ -69,11 +77,11 @@ export async function userMiddleware(req, res, next) {
             next()
         } catch (e) {
             console.error("Fallo el middleware user: ", e)
-            res.status(500).json({
+            return res.status(500).json({
                 title:"Falla!",
                 message: "Hubo un error inesperado en el servidor",
                 code: 500,
-                error: "Fallo el server de manera inesperada"
+                error: "Fallo el server de manera inesperada",
             })
         }
     }
@@ -88,7 +96,7 @@ export async function userMiddleware(req, res, next) {
                     title:"Error!",
                     message: "Type Error!, No se pudo validar el Usuario",
                     code: 400,
-                    error: JSON.parse(result.error.message)
+                    error: JSON.parse(result.error.message),
                 })
             }
     
@@ -98,11 +106,11 @@ export async function userMiddleware(req, res, next) {
             
         } catch (e) {
             console.error("Fallo el middleware user: ", e)
-            res.status(500).json({
+            return res.status(500).json({
                 title:"Falla!",
                 message: "Hubo un error inesperado en el servidor",
                 code: 500,
-                error: "Fallo el server de manera inesperada"
+                error: "Fallo el server de manera inesperada",
             })
         }
     }

@@ -50,6 +50,20 @@ export class authController {
         console.log("Body register: ", req.body)
 
         const updatedUser = await AuthModel.actualizarUsuario({data: req.body})
+
+        if (updatedUser instanceof Error) {
+            return res.status(500).json({
+                title: "Error!",
+                message: updatedUser.message,
+                code: 500,
+            })
+        }
+
+        return res.status(200).json({
+            message: "Se actualizo el usuario",
+            code: 200,
+            updatedUser: updatedUser.user
+        })
     }
 
     static async authPrueba (req, res) {

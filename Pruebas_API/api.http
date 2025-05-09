@@ -214,7 +214,7 @@ Authorization: Basic c2ViYXhsYWJlYXN0MUBnbWFpbC5jb206c2ViYXhzdXM=
 
 GET http://localhost:3000/auth/prueba
 # Asi se crea un header para la peticion | Cambiar el token para pruebas
-Authorization: Bearer 354b9e8db58b208e321330af87aa42c020cfab83c8d69a48f281c0d55ee4c084
+Authorization: Bearer 8c58c80891e8f0f22ccf97a8a257c86af66f673d21b0f2201e182802388b43f5
 
 ### Probando el crear un usuario
 
@@ -230,3 +230,10 @@ Content-Type: application/json
 ### Probando el update Usuario
 
 POST http://localhost:3000/auth/update
+Content-Type: application/json
+
+{
+    "user": "sebax",
+    "email": "sebax@gmail.com",
+    "password": "sebaxcontra"
+}

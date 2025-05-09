@@ -10,6 +10,6 @@ authRouter.post('/register', userMiddleware, authController.register)
 
 authRouter.get('/prueba', authMiddleware, authController.authPrueba)
 
-authRouter.post('/update', userMiddleware)
+authRouter.post('/update', userMiddleware, authController.updateUser)
 
 export { authRouter }
