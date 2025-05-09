@@ -204,3 +204,14 @@ GET http://localhost:3000/search?title=Pr&genre=1
 ### y le pido la pagina 2 que pasaria
 
 GET http://localhost:3000/search?title=Pr&genre=1&page=2
+
+### Probando la authenticacion 
+
+POST http://localhost:3000/auth/login
+Authorization: Basic dGVzdEBnbWFpbC5jb206dGVzdA==
+
+###
+
+GET http://localhost:3000/auth/prueba
+# Asi se crea un header para la peticion | Cambiar el token para pruebas
+Authorization: Bearer 24585ab792be75ccbce9a49e8e2364b59ee9aefd8d9f10433270bed92132defa
