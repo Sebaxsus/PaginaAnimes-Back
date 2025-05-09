@@ -208,10 +208,25 @@ GET http://localhost:3000/search?title=Pr&genre=1&page=2
 ### Probando la authenticacion 
 
 POST http://localhost:3000/auth/login
-Authorization: Basic dGVzdEBnbWFpbC5jb206dGVzdA==
+Authorization: Basic c2ViYXhsYWJlYXN0MUBnbWFpbC5jb206c2ViYXhzdXM=
 
 ###
 
 GET http://localhost:3000/auth/prueba
 # Asi se crea un header para la peticion | Cambiar el token para pruebas
-Authorization: Bearer 24585ab792be75ccbce9a49e8e2364b59ee9aefd8d9f10433270bed92132defa
+Authorization: Bearer 354b9e8db58b208e321330af87aa42c020cfab83c8d69a48f281c0d55ee4c084
+
+### Probando el crear un usuario
+
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+    "user": "sebax1",
+    "email": "sebaxlabeast1@gmail.com",
+    "password": "sebaxsus"
+}
+
+### Probando el update Usuario
+
+POST http://localhost:3000/auth/update
