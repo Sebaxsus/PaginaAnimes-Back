@@ -6,6 +6,7 @@ import { animeRouter } from './routes/animesRouter.js'
 import { corsMiddleware } from './Middleware/cors.js'
 import { generoRouter } from './routes/generosRouter.js'
 import { searchRouter } from './routes/searchRouter.js'
+import { authRouter } from './routes/authRouter.js'
 // Aqui va el import a la BD MySql
 
 const PORT = process.env.PORT ?? 3000
@@ -35,12 +36,16 @@ app.use('/generos', generoRouter)
 
 app.use('/search', searchRouter)
 
+// Escuchar la ruta Login para crear un usuario o Buscarlo
+
+app.use('/auth', authRouter)
+
 // En cuanto a los metodos Complejos me toca esperar a la base de Datos para sacar su id de ahi
 // Recordar que los Metodos Complejos son PUT/PATCH/DELETE
 // Y los metodos Normales son GET/HEAD/POST
 
 app.use((req,res) => {
-    res.status(404).json({message: 'No Existe Mi Sog, Not Found'})
+    res.status(404).json({message: 'Esa ruta no Existe Mi Sog, Not Found'})
 })
 
 app.listen(PORT, () => {
