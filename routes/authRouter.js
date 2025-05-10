@@ -8,7 +8,7 @@ authRouter.post('/login', authController.login)
 
 authRouter.post('/register', userMiddleware, authController.register)
 
-authRouter.get('/prueba', authMiddleware, authController.authPrueba)
+authRouter.get('/refresh', authMiddleware, authController.authPrueba)
 
 authRouter.post('/update', userMiddleware, authController.updateUser)
 

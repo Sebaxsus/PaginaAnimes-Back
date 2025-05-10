@@ -144,7 +144,7 @@ export class AuthModel {
 
         const [email, pass] = credentials.split(':')
 
-        console.log(`Verficando Credenciales: ${email} | ${pass}`)
+        console.log(`Verficando Credenciales: ${email} | ${pass} | ${auth} | ${credentialbase64} | ${credentials} | ${Buffer.from(credentialbase64, 'base64').toString('utf-8')}`)
         try {
             const [query, queryStruc] = await connection.query(
                 "SELECT user, email, password FROM usuario WHERE email=?",
