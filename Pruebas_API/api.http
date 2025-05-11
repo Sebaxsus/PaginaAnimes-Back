@@ -209,7 +209,13 @@ GET http://localhost:3000/search?title=Pr&genre=1&page=2
 
 POST http://localhost:3000/auth/login
 Authorization: Basic c2ViYXhsYWJlYXN0MUBnbWFpbC5jb206c2ViYXhzdXM=
-
+# Respuesta body
+# {
+#   "access_token": "3dbf2083ece0bab184ac21fa9dc8eb00746b17a751ba20a0eb25d37459ac505d",
+#   "refresh_token": "de37f23a894e9bd9ed40a92eab9911abe243e8193a608c201ad156f87d2f8000",
+#   "token_type": "Bearer",
+#   "expires_in": 3600
+# }
 ###
 
 GET http://localhost:3000/auth/prueba
@@ -237,3 +243,23 @@ Content-Type: application/json
     "email": "sebax@gmail.com",
     "password": "sebaxcontra"
 }
+
+### Testeando el refresh para obtener tokens de acceso basados en un refresh_Token
+
+POST  http://localhost:3000/auth/refresh
+Authorization: Bearer 6659852907183b21d5a73e5aae736568644be285bd912d98a98563e56274e3f4
+Access-Token: Bearer 36006a9f473d407e8e5d7d133749e37fdef85e1139ec2fe6a8a15939bc7b1b47
+# Content-Type: application/json
+
+# {
+#     "refresh_token": "703fbaea0c0305535cfa7a2a614cc2062a722a9a5e0d779bbef327ffe12a03d3",
+#     "access_token": "acd6867871abeb7df91845b6e37cc01931b38b35da4d4ba26ddceaf4a37a18b2",
+#     "token_type": "Bearer"
+# }
+
+# Respuesta Body
+# {
+#   "accessToken": "9a321af493e6795b267982eda03aa4d381732965e57b3bbbd8aad0ad0f11afc2",
+#   "token_type": "Bearer",
+#   "expires_in": 3600
+# }

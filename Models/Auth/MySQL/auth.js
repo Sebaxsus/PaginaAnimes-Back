@@ -1,6 +1,7 @@
 import crypto from "node:crypto"
 import bcrypt from "bcrypt"
 import mysql from "mysql2/promise.js"
+// import redis from "../Redis/redisClient.js"
 
 const config = {
     host: "localhost",
@@ -20,8 +21,13 @@ const connection = await mysql.createConnection(config)
 
 // Tambien cuenta con metodos como `.set(), .get(), .has(), .delete(), .clear()`
 // Y tienen mejor rendimiento en estructuras de datos grandes
-const tokens = new Map()
+const accesstokens = new Map()
+const refreshTokens = new Map()
 
+// ---------------------------------------
+
+// Redis
+// Ahora se usa redis con su cliente
 
 export class AuthModel {
     static async crearUsuario({ data }) {
@@ -121,17 +127,55 @@ export class AuthModel {
         return updatedUser
     }
 
-    static generarToken(usuario) {
-        const token = crypto.randomBytes(32).toString('hex')
-        
-        const expires = Date.now() + (3600 * 1000) // 3600 Equivale a una hora en segundos | x 1000 para poner los segundos en milisegundos (3.600.000)
+    // static async generarTokenRedis(usuario) {
+    //     // Usuario es el nombre de usuario
+    //     const token = crypto.randomBytes(32).toString('hex')
+
+    //     const expiresInSeconds = 3600
+
+    //     await redis.set(`token:${token}`, usuario, {expiration: { type: 'EX', value: expiresInSeconds }}) // 3600 segundos = 1hora
+
+    //     return {
+    //         access_token: token,
+    //         token_type: "Bearer",
+    //         expires_in: expiresInSeconds
+    //     }
+    // }
+
+    // static async verificarTokenRedis(token) {
+    //     const user = await redis.get(`token:${token}`)
+
+    //     if (!user) {
+    //         return {
+    //             user: undefined,
+    //             expired: true
+    //         }
+    //     }
+
+    //     return {
+    //         user: user,
+    //         expired: false
+    //     }
+    // }
+
+    static generarToken({usuario, req}) {
+        const accessToken = crypto.randomBytes(32).toString('hex')
+        const refreshToken = crypto.randomBytes(32).toString('hex')
+
+        const ip = req.ip
+        const user_agent = req.headers['user-agent']
+
+        const accessExpires = Date.now() + (3600 * 1000) // 3600 Equivale a una hora en segundos | x 1000 para poner los segundos en milisegundos (3.600.000)
+        const refreshExpires = Date.now() + (86400 * 1000) // 86400 segundos Equivalen a 24 horas
         // console.log(`Entro generar token, usuario: ${usuario}, token: ${token} |TokenExp: ${expires} Token segs: ${Math.floor((expires - Date.now()) / 1000)}`)
-        tokens.set(token, {usuario, expires} )
-        // console.log(`Token en el dict: ${tokens.get(token)}`)
+        accesstokens.set(accessToken, {usuario, expires: accessExpires, ip: ip, user_agent: user_agent} )
+        refreshTokens.set(refreshToken, {usuario, expires: refreshExpires, ip: ip, user_agent: user_agent} )
+        // console.log(`Token en el dict: ${accesstokens.get(token)}`)
         return {
-            access_token: token,
+            access_token: accessToken,
+            refresh_token: refreshToken,
             token_type: "Bearer",
-            expires_in: Math.floor((tokens.get(token).expires - Date.now() ) / 1000)
+            expires_in: Math.floor((accesstokens.get(accessToken).expires - Date.now() ) / 1000)
         }
         
     }
@@ -144,7 +188,7 @@ export class AuthModel {
 
         const [email, pass] = credentials.split(':')
 
-        console.log(`Verficando Credenciales: ${email} | ${pass} | ${auth} | ${credentialbase64} | ${credentials} | ${Buffer.from(credentialbase64, 'base64').toString('utf-8')}`)
+        // console.log(`Verficando Credenciales: ${email} | ${pass} | ${auth} | ${credentialbase64} | ${credentials} | ${Buffer.from(credentialbase64, 'base64').toString('utf-8')}`)
         try {
             const [query, queryStruc] = await connection.query(
                 "SELECT user, email, password FROM usuario WHERE email=?",
@@ -153,7 +197,7 @@ export class AuthModel {
 
             if (!query.length) return [false, null]
 
-            console.log("Query result: ", query[0], " Hash ", query[0].password)
+            // console.log("Query result: ", query[0], " Hash ", query[0].password)
 
             const storedHash = query[0].password
             const validPassword = await bcrypt.compare(pass, storedHash)
@@ -174,30 +218,104 @@ export class AuthModel {
         
     }
 
-    static verificarToken(token) {
+    static verificarToken({token, req}) {
 
-        const data = tokens.get(token)
+        const data = accesstokens.get(token)
+        const ip = req.ip
+        const user_agent = req.headers['user-agent']
         console.log(`Token verificar: ${token}`)
 
-        // tokens.forEach((item, key) => {
+        // accesstokens.forEach((item, key) => {
         //     console.log(key, item)
         // })
+
         if (!data) return {
             user: undefined,
-            expired: false
+            expired: false,
+            missMatch: false,
         }
 
+        if (data.ip !== ip || data.user_agent !== user_agent) {
+            return {
+                user: undefined,
+                expired: false,
+                missMatch: true,
+            }
+        }
         if (Date.now() > data.expires) {
-            tokens.delete(token)
+            accesstokens.delete(token)
             return {
                 user: data.usuario,
-                expired: true
+                expired: true,
+                missMatch: false,
             }
         }
 
         return {
             user: data.usuario,
-            expired: false
+            expired: false,
+            missMatch: false,
+        }
+    }
+
+    static verificarRefreshToken({token, req}) {
+        const ip = req.ip
+        const user_agent = req.headers['user-agent']
+        const data = refreshTokens.get(token)
+        console.log("VerificarRefresh: ", token, ip, user_agent)
+
+        if (!data) return {
+            user: undefined,
+            expired: false,
+            missMatch: false,
+        }
+
+        if (data.ip !== ip || data.user_agent !== user_agent) {
+            return {
+                user: undefined,
+                expired: false,
+                missMatch: true,
+            }
+        }
+
+        if (Date.now() > data.expires) {
+            refreshTokens.delete(token)
+            return {
+                user: data.usuario,
+                expired: true,
+                missMatch: false,
+            }
+        }
+
+        return {
+            user: data.usuario,
+            expired: false,
+            missMatch: false,
+        }
+    }
+
+    static renovarToken({refreshToken, accessToken}) {
+        
+        const tokenData = refreshTokens.get(refreshToken)
+        const oldAccessTokenData = accesstokens.get(accessToken)
+        const user = tokenData.usuario
+
+        // Generando un nuevo access token
+        const newAccessToken = crypto.randomBytes(32).toString('hex')
+        const accessExpires = Date.now() + (3600 * 1000)
+        accesstokens.set(newAccessToken, {usuario: user, expires: accessExpires})
+        // accesstokens.set(newAccessToken, {usuario: oldAccessTokenData.usuario, expires: accessExpires})
+
+        // Eliminando el accessToken antiguio si existe
+        if (oldAccessTokenData) {
+            console.log("Eliminando el antigio Token de: ", oldAccessTokenData.usuario)
+            accesstokens.delete(accessToken)
+        }
+
+        return {
+            accessToken: newAccessToken,
+            token_type: "Bearer", // Seria mejor guardar en refresh el tipo de token
+            expires_in: Math.floor((accessExpires - Date.now()) / 1000 ),
         }
     }
 }

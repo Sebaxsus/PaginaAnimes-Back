@@ -7,7 +7,7 @@ export class authController {
     static async login (req, res) {
     
         const auth = req.headers.authorization
-        console.log(auth)
+        // console.log(auth)
         if (!auth || !auth.startsWith("Basic ")) {
             return res.status(401).send(
                 "Credenciales invalidas"
@@ -15,10 +15,10 @@ export class authController {
         }
         
         const user = await AuthModel.verificarCredenciales(auth)
-        console.log("Datos devuelto por verificarCreden: ", user)
+        // console.log("Datos devuelto por verificarCreden: ", user)
         if (user[0]) {
 
-            const authorization = AuthModel.generarToken(user[1])
+            const authorization = AuthModel.generarToken({usuario: user[1], req: req})
 
             return res.status(200).send(
                 authorization
@@ -64,6 +64,18 @@ export class authController {
             code: 200,
             updatedUser: updatedUser.user
         })
+    }
+
+    static async renovarToken (req, res) {
+        // console.log("Headers refresh: ", req.headers, " User: ", req.user)
+        // Cada header viene del siguient formato Bearer <token> | Notese que los separa un espacio en blanco
+        const refresh_token = req.headers.authorization.split(" ") // Arreglo de dos posiciones | 0 = token_type, 1 = token
+        const access_token = req.headers['access-token'].split(" ")
+        const newToken = AuthModel.renovarToken({refreshToken: refresh_token[1], accessToken: access_token[1]})
+
+        return res.status(200).send(
+            newToken
+        )
     }
 
     static async authPrueba (req, res) {
