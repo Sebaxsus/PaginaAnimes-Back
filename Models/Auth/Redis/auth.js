@@ -8,11 +8,15 @@ import bcrypt from "bcrypt"
 // Ahora se usa redis con su cliente
 
 export class AuthModelR {
+
+    static generarHashSessionId(id) {
+        return crypto.createHash('sha256').update(id).digest('hex')
+    }
     // Para evitar crear mas refresh tokens para el mismo usuario
     // Toca crear una nueva llave en redis que almacene el usuario y su refresh token
     static async verificarExistingToken({ id }) {
-
-        const refreshToken = await redis.get(`session:${id}`)
+        const idHash = this.generarHashSessionId(id)
+        const refreshToken = await redis.get(`session:${idHash}`)
 
         console.log("Entro a verificar Si existe token: ", refreshToken)
 
@@ -41,7 +45,10 @@ export class AuthModelR {
         // Mantego la estructura llave: valor dentro del objecto para asegurar su nombre de llave
         await redis.set(`access:${accessToken}`, JSON.stringify({ usuario: usuario, ip: ip, user_agent: user_agent }), { expiration: { type: 'EX', value: expiresInSeconds } }) // 3600 segundos = 1hora
         await redis.set(`refresh:${refreshToken}`, JSON.stringify({ usuario: usuario, ip: ip, user_agent: user_agent }), { expiration: { type: 'EX', value: refreshExpirationTime } })
-        await redis.set(`session:${usuario+ip}`, refreshToken)
+
+        // Creando un hash de la info de session
+        const sessionHash = this.generarHashSessionId(`${usuario+ip}`)
+        await redis.set(`session:${sessionHash}`, refreshToken)
 
         return {
             access_token: accessToken,
@@ -66,9 +73,9 @@ export class AuthModelR {
         }
         const { usuario, ip, user_agent } = JSON.parse(tokenString)
 
-        console.log("Verificar token redis: ", usuario, ip, user_agent)
+        // console.log("Verificar token redis: ", usuario, ip, user_agent, "\nreq: ", req.ip, req.headers['user-agent'], req.headers['user-agent'] === user_agent, toString(ip) === toString(req.ip))
 
-        if (ip !== req.ip || user_agent !== req.headers['user-agent']) {
+        if (req.ip !== ip || req.headers['user-agent'] !== user_agent) {
             return {
                 user: usuario,
                 expired: false,
@@ -79,7 +86,7 @@ export class AuthModelR {
         return {
             user: usuario,
             expired: false,
-            missMatch: true,
+            missMatch: false,
         }
     }
 
@@ -114,7 +121,8 @@ export class AuthModelR {
     }
 
     static async limpiarTokenRedis({ sessionId, refreshToken, accessToken }) {
-        const sessionString = await redis.get(`session:${sessionId}`)
+        const sessionHash = this.generarHashSessionId(sessionId)
+        const sessionString = await redis.get(`session:${sessionHash}`)
         const tokenString = await redis.get(`refresh:${refreshToken}`)
 
         if (accessToken !== undefined) {
@@ -125,7 +133,7 @@ export class AuthModelR {
             return new Error("Token o session Invalidas o Inexistentes")
         }
 
-        await redis.del(`session:${sessionId}`)
+        await redis.del(`session:${sessionHash}`)
         await redis.del(`refresh:${refreshToken}`)
 
         return "Se cerro la session Correctamente!"
