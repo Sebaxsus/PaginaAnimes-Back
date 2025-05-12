@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { AnimeController } from "../Controllers/Animes/animes.js"
-import { authMiddleware } from "../Middleware/AuthMiddleware.js"
+import { accessTokenMiddleware, accessTokenRedisMiddleware } from "../Middleware/Auth/verifyAccessToken.js"
 
 const animeRouter = Router()
 
@@ -8,10 +8,10 @@ animeRouter.get('/', AnimeController.getAll)
 
 animeRouter.get('/:id', AnimeController.getById)
 
-animeRouter.post('/', authMiddleware, AnimeController.create)
+animeRouter.post('/', accessTokenRedisMiddleware, AnimeController.create)
 
-animeRouter.patch('/:id', authMiddleware, AnimeController.update)
+animeRouter.patch('/:id', accessTokenRedisMiddleware, AnimeController.update)
 
-animeRouter.delete('/:id', authMiddleware, AnimeController.delete)
+animeRouter.delete('/:id', accessTokenRedisMiddleware, AnimeController.delete)
 
 export { animeRouter }

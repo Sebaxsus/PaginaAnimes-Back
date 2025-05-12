@@ -247,8 +247,8 @@ Content-Type: application/json
 ### Testeando el refresh para obtener tokens de acceso basados en un refresh_Token
 
 POST  http://localhost:3000/auth/refresh
-Authorization: Bearer 6659852907183b21d5a73e5aae736568644be285bd912d98a98563e56274e3f4
-Access-Token: Bearer 36006a9f473d407e8e5d7d133749e37fdef85e1139ec2fe6a8a15939bc7b1b47
+Authorization: Bearer a2abc81b8b3904309f09c15b34da2090f10470c32dca550855440be862764d14
+Access-Token: Bearer 39faccb92746233ce2c741b984b2f88adddee47d8cb9fffd61c830bcc35f3f81
 # Content-Type: application/json
 
 # {
@@ -263,3 +263,17 @@ Access-Token: Bearer 36006a9f473d407e8e5d7d133749e37fdef85e1139ec2fe6a8a15939bc7
 #   "token_type": "Bearer",
 #   "expires_in": 3600
 # }
+
+### Testeando el Logout Sin access-token Header
+
+GET http://localhost:3000/auth/logout
+Authorization: Bearer ddcab1ad4e125064b2acc4d84500f8738f365a996de34ec2f65d9abfe9ced430
+# Access-Token: Bearer 014d68f2c0ee83059d9b4dc939e510746b268487fb0e62eeb74772c0961b8cb3
+User-name: sebax1
+
+### Testeando el logout Con access-token header
+
+GET http://localhost:3000/auth/logout
+Authorization: Bearer a2abc81b8b3904309f09c15b34da2090f10470c32dca550855440be862764d14
+Access-Token: Bearer 397c4effaeca2dba0e9ec892677e8c1fe700b6cb583a89d364c3399d664fb3cc
+User-name: sebax1

@@ -1,7 +1,6 @@
 import crypto from "node:crypto"
 import bcrypt from "bcrypt"
 import mysql from "mysql2/promise.js"
-// import redis from "../Redis/redisClient.js"
 
 const config = {
     host: "localhost",
@@ -24,10 +23,7 @@ const connection = await mysql.createConnection(config)
 const accesstokens = new Map()
 const refreshTokens = new Map()
 
-// ---------------------------------------
 
-// Redis
-// Ahora se usa redis con su cliente
 
 export class AuthModel {
     static async crearUsuario({ data }) {
@@ -127,37 +123,6 @@ export class AuthModel {
         return updatedUser
     }
 
-    // static async generarTokenRedis(usuario) {
-    //     // Usuario es el nombre de usuario
-    //     const token = crypto.randomBytes(32).toString('hex')
-
-    //     const expiresInSeconds = 3600
-
-    //     await redis.set(`token:${token}`, usuario, {expiration: { type: 'EX', value: expiresInSeconds }}) // 3600 segundos = 1hora
-
-    //     return {
-    //         access_token: token,
-    //         token_type: "Bearer",
-    //         expires_in: expiresInSeconds
-    //     }
-    // }
-
-    // static async verificarTokenRedis(token) {
-    //     const user = await redis.get(`token:${token}`)
-
-    //     if (!user) {
-    //         return {
-    //             user: undefined,
-    //             expired: true
-    //         }
-    //     }
-
-    //     return {
-    //         user: user,
-    //         expired: false
-    //     }
-    // }
-
     static generarToken({usuario, req}) {
         const accessToken = crypto.randomBytes(32).toString('hex')
         const refreshToken = crypto.randomBytes(32).toString('hex')
@@ -170,7 +135,9 @@ export class AuthModel {
         // console.log(`Entro generar token, usuario: ${usuario}, token: ${token} |TokenExp: ${expires} Token segs: ${Math.floor((expires - Date.now()) / 1000)}`)
         accesstokens.set(accessToken, {usuario, expires: accessExpires, ip: ip, user_agent: user_agent} )
         refreshTokens.set(refreshToken, {usuario, expires: refreshExpires, ip: ip, user_agent: user_agent} )
-        // console.log(`Token en el dict: ${accesstokens.get(token)}`)
+        console.log(`Token en el dict: ${usuario}`)
+        console.log(`User agent: ${user_agent}`)
+        console.log(`Ip: ${ip}`)
         return {
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -203,7 +170,7 @@ export class AuthModel {
             const validPassword = await bcrypt.compare(pass, storedHash)
             if (email === query[0].email && validPassword ) {
 
-                return [true, query[0].user]
+                return [true, query[0]]
 
             } else {
 
@@ -294,7 +261,7 @@ export class AuthModel {
         }
     }
 
-    static renovarToken({refreshToken, accessToken}) {
+    static renovarToken({refreshToken, accessToken, ip, user_agent}) {
         
         const tokenData = refreshTokens.get(refreshToken)
         const oldAccessTokenData = accesstokens.get(accessToken)
@@ -303,7 +270,7 @@ export class AuthModel {
         // Generando un nuevo access token
         const newAccessToken = crypto.randomBytes(32).toString('hex')
         const accessExpires = Date.now() + (3600 * 1000)
-        accesstokens.set(newAccessToken, {usuario: user, expires: accessExpires})
+        accesstokens.set(newAccessToken, {usuario: user, expires: accessExpires, ip: ip, user_agent: user_agent})
         // accesstokens.set(newAccessToken, {usuario: oldAccessTokenData.usuario, expires: accessExpires})
 
         // Eliminando el accessToken antiguio si existe

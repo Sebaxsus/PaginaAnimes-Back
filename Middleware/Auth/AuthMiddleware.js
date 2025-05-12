@@ -1,5 +1,66 @@
-import { AuthModel } from "../Models/Auth/MySQL/auth.js"
-import { validateUsuario, validatePartialUsuario } from "../Schemas/usuarioScheme.js"
+import { AuthModel } from "../../Models/Auth/MySQL/auth.js"
+import { validateUsuario, validatePartialUsuario } from "../../Schemas/usuarioScheme.js"
+
+export async function userMiddleware(req, res, next) {
+    console.log("Path? ", req.route.path)
+    if (req.route.path === "/register") {
+        try {
+    
+            const result = validateUsuario(req.body)
+    
+            if (result.error) {
+                return res.status(400).json({
+                    title:"Error!",
+                    message: "Type Error!, No se pudo validar el Usuario",
+                    code: 400,
+                    error: JSON.parse(result.error.message),
+                })
+            }
+    
+            req.body = result.data
+            console.log("Register pre controller: ", req.body)
+            next()
+        } catch (e) {
+            console.error("Fallo el middleware user: ", e)
+            return res.status(500).json({
+                title:"Falla!",
+                message: "Hubo un error inesperado en el servidor",
+                code: 500,
+                error: "Fallo el server de manera inesperada",
+            })
+        }
+    }
+
+    if (req.route.path === "/update") {
+        try {
+
+            const result = validatePartialUsuario(req.body)
+
+            if (result.error) {
+                return res.status(400).json({
+                    title:"Error!",
+                    message: "Type Error!, No se pudo validar el Usuario",
+                    code: 400,
+                    error: JSON.parse(result.error.message),
+                })
+            }
+    
+            req.body = result.data
+    
+            next()
+            
+        } catch (e) {
+            console.error("Fallo el middleware user: ", e)
+            return res.status(500).json({
+                title:"Falla!",
+                message: "Hubo un error inesperado en el servidor",
+                code: 500,
+                error: "Fallo el server de manera inesperada",
+            })
+        }
+    }
+}
+
 
 export async function authMiddleware(req, res, next) {
     try {
@@ -112,65 +173,5 @@ export async function refreshMiddleware(req, res, next) {
             message: "Hubo un error inesperado en el servidor",
             code: 500,
         })
-    }
-}
-
-export async function userMiddleware(req, res, next) {
-    console.log("Path? ", req.route.path)
-    if (req.route.path === "/register") {
-        try {
-    
-            const result = validateUsuario(req.body)
-    
-            if (result.error) {
-                return res.status(400).json({
-                    title:"Error!",
-                    message: "Type Error!, No se pudo validar el Usuario",
-                    code: 400,
-                    error: JSON.parse(result.error.message),
-                })
-            }
-    
-            req.body = result.data
-            console.log("Register pre controller: ", req.body)
-            next()
-        } catch (e) {
-            console.error("Fallo el middleware user: ", e)
-            return res.status(500).json({
-                title:"Falla!",
-                message: "Hubo un error inesperado en el servidor",
-                code: 500,
-                error: "Fallo el server de manera inesperada",
-            })
-        }
-    }
-
-    if (req.route.path === "/update") {
-        try {
-
-            const result = validatePartialUsuario(req.body)
-
-            if (result.error) {
-                return res.status(400).json({
-                    title:"Error!",
-                    message: "Type Error!, No se pudo validar el Usuario",
-                    code: 400,
-                    error: JSON.parse(result.error.message),
-                })
-            }
-    
-            req.body = result.data
-    
-            next()
-            
-        } catch (e) {
-            console.error("Fallo el middleware user: ", e)
-            return res.status(500).json({
-                title:"Falla!",
-                message: "Hubo un error inesperado en el servidor",
-                code: 500,
-                error: "Fallo el server de manera inesperada",
-            })
-        }
     }
 }

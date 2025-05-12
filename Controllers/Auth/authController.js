@@ -1,5 +1,6 @@
 // import { generarToken } from '../../Models/Auth/Map_Dict/auth.js'
 import { AuthModel } from "../../Models/Auth/MySQL/auth.js"
+import { AuthModelR } from "../../Models/Auth/Redis/auth.js"
 
 
 export class authController {
@@ -13,17 +14,64 @@ export class authController {
                 "Credenciales invalidas"
             )
         }
-        
+        // Devuelve un arregle de dos posiciones 
+        // [0] => bool | Referenciando si es un usuario en la BD o no
+        // [1] => objeto | con los siguientes atribs (user, email, password)
         const user = await AuthModel.verificarCredenciales(auth)
         // console.log("Datos devuelto por verificarCreden: ", user)
         if (user[0]) {
+            // Devuelve un objeto con los atribs { exist, refresh_token }
+            const refreshTokenExist = await AuthModelR.verificarExistingToken({id: `${user[1].user+req.ip}`})
+            // En caso de que vuelva a logear no creara otro refreshToken pero access si, No elimina el token anterior
+            const authorization = refreshTokenExist.exist 
+                ? 
+                await AuthModelR.renovarTokenRedis({refreshToken: refreshTokenExist.refresh_token, accessToken: null}) 
+                : 
+                await AuthModelR.generarTokenRedis({usuario: user[1].user, req: req})
 
-            const authorization = AuthModel.generarToken({usuario: user[1], req: req})
+            if (authorization instanceof Error) {
+                return res.status(500).json({
+                    title:"Error!",
+                    message: authorization.message,
+                    code: 500,
+                })
+            } 
 
             return res.status(200).send(
                 authorization
             )
+    
         }
+    }
+
+    static async logout (req, res) {
+        const token = req.headers.authorization
+        const user = req.headers['user-name']
+        const accessToken = req.headers['access-token'] // Cuando no se manda el header accessToken es undefined
+
+        console.log(accessToken, "\n", user)
+
+        if (!token || !token.startsWith("Bearer ")) {
+            return res.status(401).send(
+                "Token Invalido!"
+            )
+        }
+
+        const resultLogout = await AuthModelR.limpiarTokenRedis({sessionId: `${user+req.ip}`, refreshToken: token.split(" ")[1], accessToken: accessToken})
+
+        if (resultLogout instanceof Error) {
+            return res.status(401).json({
+                title:"Error!",
+                message: resultLogout.message,
+                code:401,
+            })
+        }
+
+        return res.status(200).json({
+            title: "Completado",
+            message: resultLogout,
+            code: 200,
+        })
     }
 
     static async register (req, res) {
@@ -71,7 +119,7 @@ export class authController {
         // Cada header viene del siguient formato Bearer <token> | Notese que los separa un espacio en blanco
         const refresh_token = req.headers.authorization.split(" ") // Arreglo de dos posiciones | 0 = token_type, 1 = token
         const access_token = req.headers['access-token'].split(" ")
-        const newToken = AuthModel.renovarToken({refreshToken: refresh_token[1], accessToken: access_token[1]})
+        const newToken = await AuthModelR.renovarTokenRedis({refreshToken: refresh_token[1], accessToken: access_token[1], ip: req.ip, user_agent: req.headers['user-agent']})
 
         return res.status(200).send(
             newToken
