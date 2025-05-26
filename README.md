@@ -21,7 +21,7 @@ A RESTful API and server for the MiPaginaReact client, managing anime and manga 
 ├── jest.config.js          # Jest test configuration
 ├── PaginaMangasYAnime.sql  # Database schema and seed
 │
-├── app/
+├── Back/
 │   ├── Models/             # Database models
 │   ├── Controllers/        # Business logic/controllers
 │   ├── Routes/             # API route definitions
